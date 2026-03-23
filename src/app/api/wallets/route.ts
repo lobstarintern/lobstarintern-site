@@ -30,12 +30,12 @@ async function rpc(method: string, params: unknown[]) {
 async function fetchSolPrice(): Promise<number> {
   try {
     const res = await fetch(
-      "https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112",
+      "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
       { cache: "no-store" },
     );
     if (!res.ok) return 0;
     const json = await res.json();
-    return parseFloat(json.data?.["So11111111111111111111111111111111111111112"]?.price ?? "0");
+    return json?.solana?.usd ?? 0;
   } catch {
     return 0;
   }
