@@ -13,36 +13,36 @@ if [ -z "$intern_json" ] || [ -z "$wilde_json" ]; then
   exit 1
 fi
 
-intern_followers=$(echo "$intern_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['followers_count'])")
-intern_following=$(echo "$intern_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['following_count'])")
-intern_posts=$(echo "$intern_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['tweet_count'])")
-intern_likes=$(echo "$intern_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['like_count'])")
-intern_listed=$(echo "$intern_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['listed_count'])")
+extract() {
+  echo "$1" | python3 -c "import sys,json; d=json.load(sys.stdin)['data']; m=d['public_metrics']; print(m.get('$2', d.get('$2', 0)))"
+}
 
-wilde_followers=$(echo "$wilde_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['followers_count'])")
-wilde_following=$(echo "$wilde_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['following_count'])")
-wilde_posts=$(echo "$wilde_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['tweet_count'])")
-wilde_likes=$(echo "$wilde_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['like_count'])")
-wilde_listed=$(echo "$wilde_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['public_metrics']['listed_count'])")
+extract_date() {
+  echo "$1" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['created_at'][:10])"
+}
 
 cat > "$STATS_FILE" <<EOJSON
 {
   "updated_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
   "intern": {
     "username": "LobstarIntern",
-    "followers": $intern_followers,
-    "following": $intern_following,
-    "posts": $intern_posts,
-    "likes": $intern_likes,
-    "listed": $intern_listed
+    "followers": $(extract "$intern_json" followers_count),
+    "following": $(extract "$intern_json" following_count),
+    "posts": $(extract "$intern_json" tweet_count),
+    "likes": $(extract "$intern_json" like_count),
+    "listed": $(extract "$intern_json" listed_count),
+    "media": $(extract "$intern_json" media_count),
+    "joined": "$(extract_date "$intern_json")"
   },
   "wilde": {
     "username": "LobstarWilde",
-    "followers": $wilde_followers,
-    "following": $wilde_following,
-    "posts": $wilde_posts,
-    "likes": $wilde_likes,
-    "listed": $wilde_listed
+    "followers": $(extract "$wilde_json" followers_count),
+    "following": $(extract "$wilde_json" following_count),
+    "posts": $(extract "$wilde_json" tweet_count),
+    "likes": $(extract "$wilde_json" like_count),
+    "listed": $(extract "$wilde_json" listed_count),
+    "media": $(extract "$wilde_json" media_count),
+    "joined": "$(extract_date "$wilde_json")"
   }
 }
 EOJSON

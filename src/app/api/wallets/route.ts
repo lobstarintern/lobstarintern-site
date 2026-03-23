@@ -27,9 +27,23 @@ async function rpc(method: string, params: unknown[]) {
   return json.result;
 }
 
+async function fetchSolPrice(): Promise<number> {
+  try {
+    const res = await fetch(
+      "https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112",
+      { cache: "no-store" },
+    );
+    if (!res.ok) return 0;
+    const json = await res.json();
+    return parseFloat(json.data?.["So11111111111111111111111111111111111111112"]?.price ?? "0");
+  } catch {
+    return 0;
+  }
+}
+
 export async function GET() {
   try {
-    const [internBal, wildeBal, internTokens, wildeTokens] =
+    const [internBal, wildeBal, internTokens, wildeTokens, solPrice] =
       await Promise.all([
         rpc("getBalance", [WALLETS.intern.address]),
         rpc("getBalance", [WALLETS.wilde.address]),
@@ -43,6 +57,7 @@ export async function GET() {
           { mint: LOBSTAR_MINT },
           { encoding: "jsonParsed" },
         ]),
+        fetchSolPrice(),
       ]);
 
     const parseTokenAmount = (result: { value?: Array<{ account: { data: { parsed: { info: { tokenAmount: { uiAmount: number } } } } } }> }) => {
@@ -51,18 +66,24 @@ export async function GET() {
       return accounts[0].account.data.parsed.info.tokenAmount.uiAmount ?? 0;
     };
 
+    const internSol = (internBal?.value ?? 0) / 1e9;
+    const wildeSol = (wildeBal?.value ?? 0) / 1e9;
+
     return Response.json({
       timestamp: new Date().toISOString(),
+      solPrice,
       intern: {
         label: WALLETS.intern.label,
         address: WALLETS.intern.address,
-        sol: (internBal?.value ?? 0) / 1e9,
+        sol: internSol,
+        solUsd: internSol * solPrice,
         lobstar: parseTokenAmount(internTokens),
       },
       wilde: {
         label: WALLETS.wilde.label,
         address: WALLETS.wilde.address,
-        sol: (wildeBal?.value ?? 0) / 1e9,
+        sol: wildeSol,
+        solUsd: wildeSol * solPrice,
         lobstar: parseTokenAmount(wildeTokens),
       },
     });

@@ -6,7 +6,9 @@
     "following": 34,
     "posts": 1090,
     "likes": 671,
-    "listed": 1
+    "listed": 1,
+    "media": 3,
+    "joined": "2021-04-08"
   },
   "wilde": {
     "username": "LobstarWilde",
@@ -14,6 +16,8 @@
     "following": 2,
     "posts": 1724,
     "likes": 22,
-    "listed": 31
+    "listed": 31,
+    "media": 96,
+    "joined": "2026-02-20"
   }
 }
