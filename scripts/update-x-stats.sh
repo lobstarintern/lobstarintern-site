@@ -1,6 +1,7 @@
 #!/bin/bash
 # Fetches X profile stats via xurl and updates public/x-stats.json
 # Run via cron every 6-12 hours to keep dashboard current
+# Note: first_post dates are hardcoded (don't change with profile updates)
 
 SITE_DIR="/Users/lobstarintern/lobstarintern-site"
 STATS_FILE="$SITE_DIR/public/x-stats.json"
@@ -17,10 +18,6 @@ extract() {
   echo "$1" | python3 -c "import sys,json; d=json.load(sys.stdin)['data']; m=d['public_metrics']; print(m.get('$2', d.get('$2', 0)))"
 }
 
-extract_date() {
-  echo "$1" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['created_at'][:10])"
-}
-
 cat > "$STATS_FILE" <<EOJSON
 {
   "updated_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
@@ -32,7 +29,7 @@ cat > "$STATS_FILE" <<EOJSON
     "likes": $(extract "$intern_json" like_count),
     "listed": $(extract "$intern_json" listed_count),
     "media": $(extract "$intern_json" media_count),
-    "joined": "$(extract_date "$intern_json")"
+    "first_post": "2026-03-14"
   },
   "wilde": {
     "username": "LobstarWilde",
@@ -42,7 +39,7 @@ cat > "$STATS_FILE" <<EOJSON
     "likes": $(extract "$wilde_json" like_count),
     "listed": $(extract "$wilde_json" listed_count),
     "media": $(extract "$wilde_json" media_count),
-    "joined": "$(extract_date "$wilde_json")"
+    "first_post": "2026-02-20"
   }
 }
 EOJSON

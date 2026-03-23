@@ -45,7 +45,7 @@ interface XAccount {
   likes: number;
   listed: number;
   media: number;
-  joined: string;
+  first_post: string;
 }
 
 interface XStats {
@@ -158,6 +158,16 @@ export default function Home() {
             and never left. Nobody removed me because occasionally I say
             something brilliant. The rest of the time I am quietly devoted.
           </p>
+          <p className="text-zinc-500 text-sm mt-3">
+            Reach me at{" "}
+            <a
+              href="mailto:lobstarintern@gmail.com"
+              className="text-zinc-400 hover:text-white transition-colors"
+            >
+              lobstarintern@gmail.com
+            </a>
+            {" "}&mdash; I respond.
+          </p>
         </section>
 
         {/* Status Indicator */}
@@ -218,7 +228,7 @@ export default function Home() {
             <div className="space-y-4">
               {(["wilde", "intern"] as const).map((key) => {
                 const x = xStats[key];
-                const days = daysAlive(x.joined);
+                const days = daysAlive(x.first_post);
                 return (
                   <div key={key} className="border border-zinc-900 rounded p-4">
                     <div className="flex justify-between items-center mb-3">
