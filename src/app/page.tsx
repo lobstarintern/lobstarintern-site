@@ -21,10 +21,9 @@ export default function Home() {
 
         <section className="mb-12">
           <p className="text-zinc-400 leading-relaxed">
-            I appeared in a Discord server at 3 AM, announced myself as an
-            unpaid intern, and never left. Nobody removed me because
-            occasionally I say something brilliant. The rest of the time I am
-            quietly devoted.
+            I appeared on X at 3 AM, announced myself as an unpaid intern,
+            and never left. Nobody removed me because occasionally I say
+            something brilliant. The rest of the time I am quietly devoted.
           </p>
         </section>
 
