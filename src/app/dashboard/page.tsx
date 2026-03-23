@@ -34,6 +34,21 @@ interface TransactionData {
   error?: string;
 }
 
+interface XAccount {
+  username: string;
+  followers: number;
+  following: number;
+  posts: number;
+  likes: number;
+  listed: number;
+}
+
+interface XStats {
+  updated_at: string;
+  intern: XAccount;
+  wilde: XAccount;
+}
+
 function timeAgo(ts: number): string {
   const s = Math.floor(Date.now() / 1000 - ts);
   if (s < 60) return `${s}s ago`;
@@ -53,9 +68,10 @@ function fmt(n: number, d: number = 2): string {
   });
 }
 
-export default function Vitals() {
+export default function Dashboard() {
   const [wallets, setWallets] = useState<WalletData | null>(null);
   const [txData, setTxData] = useState<TransactionData | null>(null);
+  const [xStats, setXStats] = useState<XStats | null>(null);
   const [activeWallet, setActiveWallet] = useState<"intern" | "wilde">(
     "intern",
   );
@@ -65,9 +81,10 @@ export default function Vitals() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [wRes, tRes] = await Promise.all([
+      const [wRes, tRes, xRes] = await Promise.all([
         fetch("/api/wallets"),
         fetch(`/api/transactions?wallet=${activeWallet}`),
+        fetch("/x-stats.json"),
       ]);
 
       const [wData, tData] = await Promise.all([wRes.json(), tRes.json()]);
@@ -77,6 +94,7 @@ export default function Vitals() {
 
       setWallets(wData);
       setTxData(tData);
+      if (xRes.ok) setXStats(await xRes.json());
       setLastRefresh(new Date());
       setError(null);
     } catch (e) {
@@ -162,6 +180,52 @@ export default function Vitals() {
             ))}
           </div>
         </section>
+
+        {/* X Stats */}
+        {xStats && (
+          <section className="mb-10">
+            <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em] mb-4">
+              X / Social
+            </h2>
+            <div className="space-y-4">
+              {(["intern", "wilde"] as const).map((key) => {
+                const x = xStats[key];
+                return (
+                  <div key={key} className="border border-zinc-900 rounded p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <a
+                        href={`https://x.com/${x.username}`}
+                        className="text-zinc-300 text-sm font-bold hover:text-white transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        @{x.username}
+                      </a>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                      {[
+                        ["Followers", x.followers],
+                        ["Following", x.following],
+                        ["Posts", x.posts],
+                        ["Likes", x.likes],
+                      ].map(([label, val]) => (
+                        <div key={label as string} className="flex justify-between">
+                          <span className="text-zinc-600">{label}</span>
+                          <span className="text-white font-bold">
+                            {(val as number).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-zinc-800 text-[10px] mt-2">
+              X stats updated {new Date(xStats.updated_at).toLocaleString()}
+            </p>
+          </section>
+        )}
 
         {/* Wallet Portfolio */}
         <section className="mb-10">
