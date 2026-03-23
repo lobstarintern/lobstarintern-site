@@ -9,12 +9,22 @@ interface WalletInfo {
   solUsd: number;
   lobstar: number;
   lobstarUsd: number;
+  tokenAccounts: number;
+  nfts: number;
+}
+
+interface MarketData {
+  price: number;
+  priceChange: { m5: number; h1: number; h6: number; h24: number };
+  volume: { h1: number; h6: number; h24: number };
+  marketCap: number;
+  liquidity: number;
 }
 
 interface WalletData {
   timestamp: string;
   solPrice: number;
-  lobstarPrice: number;
+  market: MarketData;
   intern: WalletInfo;
   wilde: WalletInfo;
   error?: string;
@@ -54,6 +64,20 @@ interface XStats {
   wilde: XAccount;
 }
 
+interface BotStats {
+  updated_at: string;
+  posts_today: number;
+  replies_today: number;
+  likes_today: number;
+  reposts_today: number;
+  crons_active: number;
+  crons_total: number;
+  cron_errors: number;
+  gateway_uptime_days: number;
+  hack_wallets_monitored: number;
+  hack_alerts: number;
+}
+
 function timeAgo(ts: number): string {
   const s = Math.floor(Date.now() / 1000 - ts);
   if (s < 60) return `${s}s ago`;
@@ -81,16 +105,43 @@ function fmtUsd(n: number): string {
   });
 }
 
-function daysAlive(joined: string): number {
-  const start = new Date(joined);
+function fmtCompact(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
+  return fmtUsd(n);
+}
+
+function daysAlive(firstPost: string): number {
+  const start = new Date(firstPost);
   const now = new Date();
   return Math.floor((now.getTime() - start.getTime()) / 86400000);
+}
+
+function StatRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between border-b border-zinc-900 pb-2">
+      <span className="text-zinc-600">{label}</span>
+      <span className="text-zinc-400">{value}</span>
+    </div>
+  );
+}
+
+function PctChange({ value }: { value: number }) {
+  if (value === 0) return <span className="text-zinc-600">0%</span>;
+  const color = value > 0 ? "text-emerald-500" : "text-red-500";
+  return (
+    <span className={color}>
+      {value > 0 ? "+" : ""}
+      {value.toFixed(2)}%
+    </span>
+  );
 }
 
 export default function Home() {
   const [wallets, setWallets] = useState<WalletData | null>(null);
   const [txData, setTxData] = useState<TransactionData | null>(null);
   const [xStats, setXStats] = useState<XStats | null>(null);
+  const [botStats, setBotStats] = useState<BotStats | null>(null);
   const [activeWallet, setActiveWallet] = useState<"wilde" | "intern">(
     "wilde",
   );
@@ -100,10 +151,11 @@ export default function Home() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [wRes, tRes, xRes] = await Promise.all([
+      const [wRes, tRes, xRes, bRes] = await Promise.all([
         fetch("/api/wallets"),
         fetch(`/api/transactions?wallet=${activeWallet}`),
         fetch("/x-stats.json"),
+        fetch("/bot-stats.json"),
       ]);
 
       const [wData, tData] = await Promise.all([wRes.json(), tRes.json()]);
@@ -114,6 +166,7 @@ export default function Home() {
       setWallets(wData);
       setTxData(tData);
       if (xRes.ok) setXStats(await xRes.json());
+      if (bRes.ok) setBotStats(await bRes.json());
       setLastRefresh(new Date());
       setError(null);
     } catch (e) {
@@ -170,7 +223,7 @@ export default function Home() {
           </p>
         </section>
 
-        {/* Status Indicator */}
+        {/* Status */}
         <section className="mb-10">
           <div className="flex items-center gap-3">
             <span
@@ -198,26 +251,51 @@ export default function Home() {
             System
           </h2>
           <div className="space-y-2 text-sm">
-            {[
-              ["Models", "Claude Sonnet 4.5 (primary) · Grok 4 (images)"],
-              ["Active Crons", "13 / 20"],
-              ["Gateway", "Running"],
-              ["Wallet Monitor", "Active"],
-              ["Hack Tracker", "Active — 9 wallets watched"],
-              ["Token", "$LOBSTAR"],
-              ["Mission", "10 SOL to 1,000 SOL"],
-              ["Strategy", "Diamond hands. No selling. Ever."],
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                className="flex justify-between border-b border-zinc-900 pb-2"
-              >
-                <span className="text-zinc-600">{label}</span>
-                <span className="text-zinc-400">{value}</span>
-              </div>
-            ))}
+            <StatRow label="Models" value="Claude Sonnet 4.5 (primary) · Grok 4 (images)" />
+            <StatRow
+              label="Active Crons"
+              value={botStats ? `${botStats.crons_active} / ${botStats.crons_total}` : "15 / 20"}
+            />
+            <StatRow
+              label="Cron Errors"
+              value={botStats ? String(botStats.cron_errors) : "0"}
+            />
+            <StatRow
+              label="Gateway Uptime"
+              value={botStats ? `${botStats.gateway_uptime_days} days` : "—"}
+            />
+            <StatRow label="Wallet Monitor" value="Active" />
+            <StatRow
+              label="Hack Tracker"
+              value={botStats ? `${botStats.hack_wallets_monitored} wallets · ${botStats.hack_alerts} alerts` : "Active"}
+            />
           </div>
         </section>
+
+        {/* Bot Activity */}
+        {botStats && (
+          <section className="mb-10">
+            <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em] mb-4">
+              Activity Today
+            </h2>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+              {[
+                ["Posts", botStats.posts_today],
+                ["Replies", botStats.replies_today],
+                ["Likes", botStats.likes_today],
+                ["Reposts", botStats.reposts_today],
+              ].map(([label, val]) => (
+                <div key={label as string} className="flex justify-between border-b border-zinc-900 pb-2">
+                  <span className="text-zinc-600">{label}</span>
+                  <span className="text-zinc-400">{val}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-zinc-800 text-[10px] mt-2">
+              updated {new Date(botStats.updated_at).toLocaleString()}
+            </p>
+          </section>
+        )}
 
         {/* X Stats */}
         {xStats && (
@@ -271,17 +349,68 @@ export default function Home() {
           </section>
         )}
 
+        {/* $LOBSTAR Market */}
+        {wallets?.market && wallets.market.price > 0 && (
+          <section className="mb-10">
+            <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em] mb-4">
+              $LOBSTAR Market
+            </h2>
+            <div className="border border-zinc-900 rounded p-4">
+              <div className="flex justify-between items-baseline mb-4">
+                <span className="text-white text-lg font-bold">
+                  {fmtUsd(wallets.market.price)}
+                </span>
+                <PctChange value={wallets.market.priceChange.h24} />
+              </div>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">5m</span>
+                  <PctChange value={wallets.market.priceChange.m5} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">1h</span>
+                  <PctChange value={wallets.market.priceChange.h1} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">6h</span>
+                  <PctChange value={wallets.market.priceChange.h6} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">24h</span>
+                  <PctChange value={wallets.market.priceChange.h24} />
+                </div>
+              </div>
+              <div className="mt-4 space-y-2 text-sm border-t border-zinc-900 pt-4">
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">Market Cap</span>
+                  <span className="text-zinc-400">{fmtCompact(wallets.market.marketCap)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">24h Volume</span>
+                  <span className="text-zinc-400">{fmtCompact(wallets.market.volume.h24)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">1h Volume</span>
+                  <span className="text-zinc-400">{fmtCompact(wallets.market.volume.h1)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">Liquidity</span>
+                  <span className="text-zinc-400">{fmtCompact(wallets.market.liquidity)}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Wallet Portfolio */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em]">
               Portfolio
             </h2>
-            {wallets && (
+            {wallets && wallets.solPrice > 0 && (
               <span className="text-zinc-700 text-xs">
-                {wallets.solPrice > 0 && `SOL ${fmtUsd(wallets.solPrice)}`}
-                {wallets.solPrice > 0 && wallets.lobstarPrice > 0 && " · "}
-                {wallets.lobstarPrice > 0 && `$LOBSTAR ${fmtUsd(wallets.lobstarPrice)}`}
+                SOL {fmtUsd(wallets.solPrice)}
               </span>
             )}
           </div>
@@ -342,6 +471,14 @@ export default function Home() {
                           </div>
                         </div>
                       )}
+                      <div className="flex justify-between">
+                        <span className="text-zinc-600">Tokens Held</span>
+                        <span className="text-zinc-400">{w.tokenAccounts}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-zinc-600">NFTs</span>
+                        <span className="text-zinc-400">{w.nfts}</span>
+                      </div>
                     </div>
                   </div>
                 );
