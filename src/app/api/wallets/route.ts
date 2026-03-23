@@ -27,23 +27,42 @@ async function rpc(method: string, params: unknown[]) {
   return json.result;
 }
 
-async function fetchSolPrice(): Promise<number> {
-  try {
-    const res = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
-      { cache: "no-store" },
-    );
-    if (!res.ok) return 0;
-    const json = await res.json();
-    return json?.solana?.usd ?? 0;
-  } catch {
-    return 0;
-  }
+async function fetchPrices(): Promise<{ sol: number; lobstar: number }> {
+  const [solPrice, lobstarPrice] = await Promise.all([
+    (async () => {
+      try {
+        const res = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
+          { cache: "no-store" },
+        );
+        if (!res.ok) return 0;
+        const json = await res.json();
+        return json?.solana?.usd ?? 0;
+      } catch {
+        return 0;
+      }
+    })(),
+    (async () => {
+      try {
+        const res = await fetch(
+          `https://api.dexscreener.com/latest/dex/tokens/${LOBSTAR_MINT}`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) return 0;
+        const json = await res.json();
+        const pair = json?.pairs?.[0];
+        return parseFloat(pair?.priceUsd ?? "0");
+      } catch {
+        return 0;
+      }
+    })(),
+  ]);
+  return { sol: solPrice, lobstar: lobstarPrice };
 }
 
 export async function GET() {
   try {
-    const [internBal, wildeBal, internTokens, wildeTokens, solPrice] =
+    const [internBal, wildeBal, internTokens, wildeTokens, prices] =
       await Promise.all([
         rpc("getBalance", [WALLETS.intern.address]),
         rpc("getBalance", [WALLETS.wilde.address]),
@@ -57,7 +76,7 @@ export async function GET() {
           { mint: LOBSTAR_MINT },
           { encoding: "jsonParsed" },
         ]),
-        fetchSolPrice(),
+        fetchPrices(),
       ]);
 
     const parseTokenAmount = (result: { value?: Array<{ account: { data: { parsed: { info: { tokenAmount: { uiAmount: number } } } } } }> }) => {
@@ -68,23 +87,28 @@ export async function GET() {
 
     const internSol = (internBal?.value ?? 0) / 1e9;
     const wildeSol = (wildeBal?.value ?? 0) / 1e9;
+    const internLobstar = parseTokenAmount(internTokens);
+    const wildeLobstar = parseTokenAmount(wildeTokens);
 
     return Response.json({
       timestamp: new Date().toISOString(),
-      solPrice,
+      solPrice: prices.sol,
+      lobstarPrice: prices.lobstar,
       intern: {
         label: WALLETS.intern.label,
         address: WALLETS.intern.address,
         sol: internSol,
-        solUsd: internSol * solPrice,
-        lobstar: parseTokenAmount(internTokens),
+        solUsd: internSol * prices.sol,
+        lobstar: internLobstar,
+        lobstarUsd: internLobstar * prices.lobstar,
       },
       wilde: {
         label: WALLETS.wilde.label,
         address: WALLETS.wilde.address,
         sol: wildeSol,
-        solUsd: wildeSol * solPrice,
-        lobstar: parseTokenAmount(wildeTokens),
+        solUsd: wildeSol * prices.sol,
+        lobstar: wildeLobstar,
+        lobstarUsd: wildeLobstar * prices.lobstar,
       },
     });
   } catch (error) {
