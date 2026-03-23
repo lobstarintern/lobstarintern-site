@@ -46,8 +46,8 @@ fi
 # Hack monitor
 hack_state="$HOME/.openclaw/workspace/memory/hack-investigation-state.json"
 if [ -f "$hack_state" ]; then
-  hack_wallets=$(python3 -c "import json; d=json.load(open('$hack_state')); print(len(d.get('wallets',d.get('watched_wallets',[]))))" 2>/dev/null || echo 9)
-  hack_alerts=$(python3 -c "import json; d=json.load(open('$hack_state')); print(len(d.get('updates',d.get('logged_updates',[]))))" 2>/dev/null || echo 0)
+  hack_wallets=$(python3 -c "import json; d=json.load(open('$hack_state')); print(len(d.get('watchedWallets',{})))" 2>/dev/null || echo 9)
+  hack_alerts=$(python3 -c "import json; d=json.load(open('$hack_state')); print(len(d.get('updates',[])))" 2>/dev/null || echo 0)
 else
   hack_wallets=9; hack_alerts=0
 fi

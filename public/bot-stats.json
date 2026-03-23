@@ -8,6 +8,6 @@
   "crons_total": 20,
   "cron_errors": 0,
   "gateway_uptime_days": 4,
-  "hack_wallets_monitored": 0,
+  "hack_wallets_monitored": 9,
   "hack_alerts": 6
 }
