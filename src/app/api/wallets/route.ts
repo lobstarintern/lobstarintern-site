@@ -13,6 +13,7 @@ const WALLETS = {
 
 const LOBSTAR_MINT = "AVF9F4C4j8b1Kh4BmNHqybDaHgnZpJ7W7yLvL7hUpump";
 const TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const TOKEN_2022_PROGRAM = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
 
 const HELIUS_RPC = () =>
   `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
@@ -113,8 +114,10 @@ export async function GET() {
       wildeBal,
       internLobstarAcct,
       wildeLobstarAcct,
-      internAllTokens,
-      wildeAllTokens,
+      internSplTokens,
+      wildeSplTokens,
+      intern2022Tokens,
+      wilde2022Tokens,
       internNfts,
       wildeNfts,
       prices,
@@ -141,6 +144,16 @@ export async function GET() {
         { programId: TOKEN_PROGRAM },
         { encoding: "jsonParsed" },
       ]),
+      rpc("getTokenAccountsByOwner", [
+        WALLETS.intern.address,
+        { programId: TOKEN_2022_PROGRAM },
+        { encoding: "jsonParsed" },
+      ]).catch(() => ({ value: [] })),
+      rpc("getTokenAccountsByOwner", [
+        WALLETS.wilde.address,
+        { programId: TOKEN_2022_PROGRAM },
+        { encoding: "jsonParsed" },
+      ]).catch(() => ({ value: [] })),
       das("getAssetsByOwner", {
         ownerAddress: WALLETS.intern.address,
         page: 1,
@@ -190,7 +203,7 @@ export async function GET() {
         solUsd: internSol * prices.sol,
         lobstar: internLobstar,
         lobstarUsd: internLobstar * prices.lobstar.price,
-        tokenAccounts: internAllTokens?.value?.length ?? 0,
+        tokenAccounts: (internSplTokens?.value?.length ?? 0) + (intern2022Tokens?.value?.length ?? 0),
         nfts: internNfts?.total ?? 0,
       },
       wilde: {
@@ -200,7 +213,7 @@ export async function GET() {
         solUsd: wildeSol * prices.sol,
         lobstar: wildeLobstar,
         lobstarUsd: wildeLobstar * prices.lobstar.price,
-        tokenAccounts: wildeAllTokens?.value?.length ?? 0,
+        tokenAccounts: (wildeSplTokens?.value?.length ?? 0) + (wilde2022Tokens?.value?.length ?? 0),
         nfts: wildeNfts?.total ?? 0,
       },
     });

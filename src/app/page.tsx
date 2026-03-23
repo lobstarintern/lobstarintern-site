@@ -30,13 +30,22 @@ interface WalletData {
   error?: string;
 }
 
+interface TokenChange {
+  mint: string;
+  amount: number;
+  decimals: number;
+}
+
 interface Transaction {
   signature: string;
   timestamp: number;
   type: string;
+  source: string;
   description: string;
   fee: number;
   feePayer: string;
+  solChange: number;
+  tokenChanges: TokenChange[];
 }
 
 interface TransactionData {
@@ -98,7 +107,13 @@ function fmt(n: number, d: number = 2): string {
 }
 
 function fmtUsd(n: number): string {
-  if (n < 0.01 && n > 0) return "<$0.01";
+  if (n === 0) return "$0.00";
+  if (n < 0.0001 && n > 0) return "<$0.0001";
+  if (n < 1) {
+    // Show enough decimals for small prices
+    const decimals = Math.max(2, -Math.floor(Math.log10(Math.abs(n))) + 3);
+    return "$" + n.toFixed(Math.min(decimals, 8));
+  }
   return "$" + n.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -115,6 +130,23 @@ function daysAlive(firstPost: string): number {
   const start = new Date(firstPost);
   const now = new Date();
   return Math.floor((now.getTime() - start.getTime()) / 86400000);
+}
+
+const KNOWN_MINTS: Record<string, string> = {
+  So11111111111111111111111111111111111111112: "SOL",
+  AVF9F4C4j8b1Kh4BmNHqybDaHgnZpJ7W7yLvL7hUpump: "$LOBSTAR",
+};
+
+function mintLabel(mint: string): string {
+  return KNOWN_MINTS[mint] || `${mint.slice(0, 4)}...`;
+}
+
+function fmtChange(n: number, decimals: number = 4): string {
+  const sign = n >= 0 ? "+" : "";
+  return sign + n.toLocaleString(undefined, {
+    minimumFractionDigits: Math.min(decimals, 4),
+    maximumFractionDigits: Math.min(decimals, 4),
+  });
 }
 
 function StatRow({ label, value }: { label: string; value: string }) {
@@ -520,26 +552,57 @@ export default function Home() {
                 <a
                   key={tx.signature}
                   href={`https://solscan.io/tx/${tx.signature}`}
-                  className="flex items-start justify-between py-2.5 border-b border-zinc-900/50 text-xs gap-4 hover:bg-zinc-900/30 transition-colors block"
+                  className="block py-3 border-b border-zinc-900/50 hover:bg-zinc-900/30 transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-zinc-500 uppercase text-[10px] tracking-wider font-bold">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-400 uppercase text-[10px] tracking-wider font-bold">
                         {tx.type?.replace(/_/g, " ") || "UNKNOWN"}
                       </span>
+                      {tx.source && (
+                        <span className="text-zinc-700 text-[10px]">
+                          {tx.source.replace(/_/g, " ")}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
                       <span className="text-zinc-700">
                         {tx.timestamp ? timeAgo(tx.timestamp) : "—"}
                       </span>
+                      <span className="text-zinc-800">
+                        {truncSig(tx.signature)}
+                      </span>
                     </div>
-                    <p className="text-zinc-600 truncate leading-relaxed">
-                      {tx.description || "No description"}
-                    </p>
                   </div>
-                  <span className="text-zinc-700 hover:text-zinc-400 transition-colors shrink-0 mt-0.5">
-                    {truncSig(tx.signature)}
-                  </span>
+                  {/* Balance changes */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
+                    {tx.solChange !== 0 && (
+                      <span className={tx.solChange > 0 ? "text-emerald-600" : "text-red-500/70"}>
+                        {fmtChange(tx.solChange)} SOL
+                      </span>
+                    )}
+                    {tx.tokenChanges?.map((tc, i) => (
+                      <span
+                        key={i}
+                        className={tc.amount > 0 ? "text-emerald-600" : "text-red-500/70"}
+                      >
+                        {fmtChange(tc.amount, tc.decimals)} {mintLabel(tc.mint)}
+                      </span>
+                    ))}
+                    {tx.fee > 0 && (
+                      <span className="text-zinc-800">
+                        fee {tx.fee.toFixed(6)} SOL
+                      </span>
+                    )}
+                  </div>
+                  {/* Description */}
+                  {tx.description && (
+                    <p className="text-zinc-700 text-[11px] truncate mt-0.5">
+                      {tx.description}
+                    </p>
+                  )}
                 </a>
               ))}
             </div>
