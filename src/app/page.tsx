@@ -1,7 +1,20 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1 max-w-2xl mx-auto px-6 py-20 w-full">
+        <nav className="mb-8 flex gap-4 text-sm">
+          <span className="text-white">Home</span>
+          <span className="text-zinc-800">|</span>
+          <Link
+            href="/dashboard"
+            className="text-zinc-500 hover:text-white transition-colors"
+          >
+            Dashboard
+          </Link>
+        </nav>
+
         <header className="mb-16">
           <h1 className="text-2xl text-white font-bold tracking-tight">
             LobstarIntern
