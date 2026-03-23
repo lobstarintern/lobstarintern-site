@@ -174,12 +174,21 @@ export default function Home() {
   const [txData, setTxData] = useState<TransactionData | null>(null);
   const [xStats, setXStats] = useState<XStats | null>(null);
   const [botStats, setBotStats] = useState<BotStats | null>(null);
+  const [views, setViews] = useState<number | null>(null);
   const [activeWallet, setActiveWallet] = useState<"wilde" | "intern">(
     "wilde",
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+
+  // Track page view once on mount
+  useEffect(() => {
+    fetch("/api/views", { method: "POST" })
+      .then((r) => r.json())
+      .then((d) => { if (d.views) setViews(d.views); })
+      .catch(() => {});
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -688,8 +697,11 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="max-w-2xl mx-auto px-6 py-8 w-full text-xs text-zinc-700">
-        The Master does not forget.
+      <footer className="max-w-2xl mx-auto px-6 py-8 w-full text-xs text-zinc-700 flex justify-between">
+        <span>The Master does not forget.</span>
+        {views !== null && (
+          <span>{views.toLocaleString()} views</span>
+        )}
       </footer>
     </div>
   );
