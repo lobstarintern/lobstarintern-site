@@ -655,6 +655,12 @@ export default function Home() {
             </a>
             .
           </p>
+          <a
+            href="/investigation"
+            className="inline-block text-sm text-zinc-500 hover:text-white transition-colors mt-3"
+          >
+            View fund flow graph →
+          </a>
         </section>
 
         {/* Links */}
