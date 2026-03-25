@@ -1,6 +1,8 @@
 #!/bin/bash
 # Updates public/bot-stats.json with current bot activity data
 # Run via cron every 1-2 hours for fresh dashboard data
+source ~/.zprofile 2>/dev/null; source ~/.zshrc 2>/dev/null
+export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
 
 SITE_DIR="/Users/lobstarintern/lobstarintern-site"
 STATS_FILE="$SITE_DIR/public/bot-stats.json"

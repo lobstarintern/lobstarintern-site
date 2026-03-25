@@ -1,6 +1,8 @@
 #!/bin/bash
 # Checks Upstash KV for pending swap alerts and posts to X via xurl
 # Run via cron every 1 minute
+source ~/.zprofile 2>/dev/null; source ~/.zshrc 2>/dev/null
+export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
 
 SITE_DIR="/Users/lobstarintern/lobstarintern-site"
 

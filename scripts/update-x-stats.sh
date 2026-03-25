@@ -2,6 +2,8 @@
 # Fetches X profile stats via xurl and updates public/x-stats.json
 # Run via cron every 6-12 hours to keep dashboard current
 # Note: first_post dates are hardcoded (don't change with profile updates)
+source ~/.zprofile 2>/dev/null; source ~/.zshrc 2>/dev/null
+export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
 
 SITE_DIR="/Users/lobstarintern/lobstarintern-site"
 STATS_FILE="$SITE_DIR/public/x-stats.json"
