@@ -40,11 +40,9 @@ interface GraphData {
 const TYPE_COLORS: Record<string, string> = {
   hacker: "#ef4444",
   mixer: "#a855f7",
-  privacy: "#a855f7",
+  known: "#06b6d4",
   victim: "#3b82f6",
   exchange: "#f59e0b",
-  dex: "#22c55e",
-  known: "#06b6d4",
   unknown: "#52525b",
 };
 

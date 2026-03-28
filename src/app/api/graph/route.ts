@@ -1,23 +1,28 @@
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 // ---------------------------------------------------------------------------
 // Known addresses
 // ---------------------------------------------------------------------------
 
 const HACKER_WALLETS: Record<string, string> = {
-  "2NurbsXSFyvdWZUuiPEDmT7ad2GxYAP2YYDRq176ct7u": "origin",
-  "8REpwxrWDGi4KsbHNnCfQimBAy6j57nqeN8wGZGE3tsB": "intermediary",
-  GfiVHZfX8op1QJzNNktrsjhL7yag33oRR6gfPpjEqgP4: "creator",
-  "4AV2Qzp3N4c9RfzyEbNZs2wqWfW4EwKnnxFAZCndvfGh": "drain / privacycash_pool",
-  HJpdKEAxoxauv19jEtL3tiZgmrP9uPQfB5wTAdEmFzru: "satellite1",
-  FWBgQsiHdmbZhVrJnE6DpeLnotuTRSPAahFBrU3troDc: "satellite2",
-  FqtA2BSoJ3KpJCjz5NV6XJDMNcRTADPtELjJuLExqjqh: "satellite3",
-  AF8VuwCncKd5ZBnLYYnMjqh4vLch8mjqE75sFe5ZjRFW: "privacycash_relayer",
+  "2NurbsXSFyvdWZUuiPEDmT7ad2GxYAP2YYDRq176ct7u": "Origin Wallet",
+  "8REpwxrWDGi4KsbHNnCfQimBAy6j57nqeN8wGZGE3tsB": "Intermediary",
+  GfiVHZfX8op1QJzNNktrsjhL7yag33oRR6gfPpjEqgP4: "Creator / Funder",
+  HJpdKEAxoxauv19jEtL3tiZgmrP9uPQfB5wTAdEmFzru: "Satellite 1",
+  FWBgQsiHdmbZhVrJnE6DpeLnotuTRSPAahFBrU3troDc: "Satellite 2",
+  FqtA2BSoJ3KpJCjz5NV6XJDMNcRTADPtELjJuLExqjqh: "Satellite 3",
+};
+
+// Mixer/privacy wallets — separated so they get "mixer" node type
+const MIXER_WALLETS: Record<string, string> = {
+  "4AV2Qzp3N4c9RfzyEbNZs2wqWfW4EwKnnxFAZCndvfGh": "PrivacyCash Pool / Drain",
+  AF8VuwCncKd5ZBnLYYnMjqh4vLch8mjqE75sFe5ZjRFW: "PrivacyCash Relayer",
 };
 
 const KNOWN_LABELS: Record<string, string> = {
   ...HACKER_WALLETS,
+  ...MIXER_WALLETS,
   "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS": "LobstarWilde.sol",
   "8iBF33H1oxo2QQWLY1yzHXs2zyaPRtopPGbphuRGfsZq": "LobstarIntern.sol",
 };
@@ -40,7 +45,7 @@ const DUST_THRESHOLD_SOL = 0.001;
 interface GraphNode {
   id: string;
   label: string;
-  type: "hacker" | "known" | "unknown";
+  type: "hacker" | "mixer" | "known" | "victim" | "exchange" | "unknown";
   balance?: number;
 }
 
@@ -107,7 +112,7 @@ async function kvCommand(command: string[]): Promise<unknown> {
 }
 
 const CACHE_KEY = "graph_cache";
-const CACHE_TTL = "900"; // 15 minutes
+const CACHE_TTL = "3600"; // 1 hour (heavier fetch now)
 
 // ---------------------------------------------------------------------------
 // Helius fetcher
@@ -117,13 +122,30 @@ async function fetchTransactions(
   address: string,
   apiKey: string,
 ): Promise<HeliusTransaction[]> {
-  const url = `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=50`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
-    console.error(`Helius error for ${address}: ${res.status}`);
-    return [];
+  const allTxs: HeliusTransaction[] = [];
+  let before: string | undefined;
+  const MAX_PAGES = 4; // Up to 400 transactions per wallet
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    let url = `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`;
+    if (before) url += `&before=${before}`;
+
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      console.error(`Helius error for ${address}: ${res.status}`);
+      break;
+    }
+    const txs: HeliusTransaction[] = await res.json();
+    if (txs.length === 0) break;
+
+    allTxs.push(...txs);
+    before = txs[txs.length - 1].signature;
+
+    // Stop if we got fewer than requested (no more pages)
+    if (txs.length < 100) break;
   }
-  return res.json();
+
+  return allTxs;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,12 +165,18 @@ function buildGraph(allTxs: HeliusTransaction[]): GraphResult {
     if (nodeMap.has(address)) return;
 
     const hackerLabel = HACKER_WALLETS[address];
+    const mixerLabel = MIXER_WALLETS[address];
     const knownLabel = KNOWN_LABELS[address];
+
+    let type: GraphNode["type"] = "unknown";
+    if (hackerLabel) type = "hacker";
+    else if (mixerLabel) type = "mixer";
+    else if (knownLabel) type = "known";
 
     nodeMap.set(address, {
       id: address,
       label: knownLabel ?? address.slice(0, 4) + "..." + address.slice(-4),
-      type: hackerLabel ? "hacker" : knownLabel ? "known" : "unknown",
+      type,
     });
   }
 
@@ -253,10 +281,15 @@ export async function GET() {
       return Response.json({ error: "HELIUS_API_KEY not configured" }, { status: 500 });
     }
 
-    // Fetch transactions for all hacker wallets in parallel
-    const addresses = Object.keys(HACKER_WALLETS);
+    // Fetch transactions for all tracked wallets in parallel
+    const addresses = [
+      ...Object.keys(HACKER_WALLETS),
+      ...Object.keys(MIXER_WALLETS),
+    ];
+    // Deduplicate addresses (drain/pool appears in both)
+    const uniqueAddresses = [...new Set(addresses)];
     const txArrays = await Promise.all(
-      addresses.map((addr) => fetchTransactions(addr, apiKey)),
+      uniqueAddresses.map((addr) => fetchTransactions(addr, apiKey)),
     );
 
     // Deduplicate transactions by signature
