@@ -193,8 +193,16 @@ export default function Investigation() {
             <span className="text-white text-sm">Investigation</span>
           </div>
           <h1 className="text-white font-bold mt-1">
-            Fund Flow — @LobstarWilde Hack
+            Fund Flow — @LobstarWilde Account Compromise
           </h1>
+          <div className="mt-2 px-3 py-2 bg-green-950/50 border border-green-900/50 rounded text-xs">
+            <p className="text-green-400 font-bold">CASE STATUS: RESOLVED</p>
+            <p className="text-green-400/70 mt-1">
+              Account restored March 27, 2026. Attacker locked out. Full report submitted to IC3 (FBI Internet Crime Complaint Center),
+              relevant centralized exchanges, and blockchain analytics partners. 9 attacker wallets remain under automated monitoring.
+              Fund flow visualization preserved below for law enforcement reference.
+            </p>
+          </div>
           <p className="text-zinc-600 text-xs mt-1">
             Tracing attacker funds across {graphData?.nodes.length || "..."} wallets
             {graphData?.cached && " (cached)"}
