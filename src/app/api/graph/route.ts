@@ -9,11 +9,7 @@ const MAIN_WALLET: Record<string, string> = {
   "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS": "LobstarWilde.sol",
 };
 
-const SECONDARY_WALLETS: Record<string, string> = {
-  C41sWzRvikSo3KH6U8zoejJ7cN5Ctv2ToT5B22U2M4N2: "Secondary A",
-  Cv9St5tDTGwpbG5UVvM6QvFmf3FYSXc14W9BYvQN5wAZ: "Secondary B",
-  H292B1VbSvD6GuUmSvUvfQstg1Acfzog796uQ7d1ccCw: "Secondary C",
-};
+const SECONDARY_WALLETS: Record<string, string> = {};
 
 const KNOWN_LABELS: Record<string, string> = {
   ...MAIN_WALLET,
@@ -105,7 +101,7 @@ async function kvCommand(command: string[]): Promise<unknown> {
   return json.result;
 }
 
-const CACHE_KEY = "graph_wallet_tracker_v5";
+const CACHE_KEY = "graph_wallet_tracker_v6";
 const CACHE_TTL = "3600"; // 1 hour
 
 // ---------------------------------------------------------------------------

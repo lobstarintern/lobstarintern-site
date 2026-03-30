@@ -257,9 +257,6 @@ export default function WalletTracker() {
       <div className="px-6 py-3 border-b border-zinc-900/50 flex gap-6 text-xs overflow-x-auto">
         {[
           { label: "LobstarWilde.sol", addr: "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS", color: TYPE_COLORS.main },
-          { label: "Secondary A", addr: "C41sWzRvikSo3KH6U8zoejJ7cN5Ctv2ToT5B22U2M4N2", color: TYPE_COLORS.secondary },
-          { label: "Secondary B", addr: "Cv9St5tDTGwpbG5UVvM6QvFmf3FYSXc14W9BYvQN5wAZ", color: TYPE_COLORS.secondary },
-          { label: "Secondary C", addr: "H292B1VbSvD6GuUmSvUvfQstg1Acfzog796uQ7d1ccCw", color: TYPE_COLORS.secondary },
         ].map((w) => (
           <a
             key={w.addr}
