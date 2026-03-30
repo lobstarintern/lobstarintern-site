@@ -242,6 +242,14 @@ export default function Home() {
               @LobstarWilde
             </a>
           </p>
+          <nav className="mt-4 flex gap-4 text-xs">
+            <a
+              href="/investigation"
+              className="text-zinc-600 hover:text-white transition-colors"
+            >
+              Wallet Tracker
+            </a>
+          </nav>
         </header>
 
         {/* Bio */}

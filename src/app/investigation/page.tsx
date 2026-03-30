@@ -255,7 +255,6 @@ export default function WalletTracker() {
           { label: "Secondary A", addr: "C41sWzRvikSo3KH6U8zoejJ7cN5Ctv2ToT5B22U2M4N2", color: TYPE_COLORS.secondary },
           { label: "Secondary B", addr: "Cv9St5tDTGwpbG5UVvM6QvFmf3FYSXc14W9BYvQN5wAZ", color: TYPE_COLORS.secondary },
           { label: "Secondary C", addr: "H292B1VbSvD6GuUmSvUvfQstg1Acfzog796uQ7d1ccCw", color: TYPE_COLORS.secondary },
-          { label: "LobstarIntern.sol", addr: "8iBF33H1oxo2QQWLY1yzHXs2zyaPRtopPGbphuRGfsZq", color: TYPE_COLORS.intern },
         ].map((w) => (
           <a
             key={w.addr}

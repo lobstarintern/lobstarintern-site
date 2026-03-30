@@ -32,7 +32,7 @@ const PROGRAM_ADDRESSES = new Set([
   "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA", // PumpSwap
 ]);
 
-const DUST_THRESHOLD_SOL = 0.001;
+const DUST_THRESHOLD_SOL = 10; // Only show transfers >= 10 SOL
 
 // ---------------------------------------------------------------------------
 // Types
