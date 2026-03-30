@@ -111,7 +111,7 @@ async function kvCommand(command: string[]): Promise<unknown> {
   return json.result;
 }
 
-const CACHE_KEY = "graph_wallet_tracker_v8";
+const CACHE_KEY = "graph_wallet_tracker_v9";
 const CACHE_TTL = "3600"; // 1 hour
 
 // ---------------------------------------------------------------------------
@@ -317,6 +317,32 @@ export async function GET(request: Request) {
     }
 
     const result = buildGraph(allTxs);
+
+    // Add verified historical edges that Helius can't reach (too old for enhanced API)
+    const LOBSTAR_MINT = "AVF9F4C4j8b1Kh4BmNHqybDaHgnZpJ7W7yLvL7hUpump";
+    const historicalEdges: Array<{ from: string; to: string; amount: number; token: string; count: number; signatures: string[] }> = [
+      {
+        from: "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS",
+        to: "EpTPPrqzQUgtJaZ7XUUiK3nuHe1MusbjLiQuJx3kNnL6",
+        amount: 52_439_284, token: LOBSTAR_MINT, count: 1,
+        signatures: ["44y5FBM1aiHV83cv76eNQ4tQR3dnk8krjZBb9jwGrDEZLE5FCzeBX9Xi3wHRfTB6eFtJU7a5XvM1pz5AxTor2A4U"],
+      },
+    ];
+    for (const he of historicalEdges) {
+      // Add nodes if not present
+      if (!result.nodes.find((n: GraphNode) => n.id === he.from)) {
+        const label = KNOWN_LABELS[he.from] || he.from.slice(0, 4) + "..." + he.from.slice(-4);
+        result.nodes.push({ id: he.from, label, type: MAIN_WALLET[he.from] ? "main" : SECONDARY_WALLETS[he.from] ? "secondary" : "unknown" });
+      }
+      if (!result.nodes.find((n: GraphNode) => n.id === he.to)) {
+        const label = KNOWN_LABELS[he.to] || he.to.slice(0, 4) + "..." + he.to.slice(-4);
+        result.nodes.push({ id: he.to, label, type: MAIN_WALLET[he.to] ? "main" : SECONDARY_WALLETS[he.to] ? "secondary" : "unknown" });
+      }
+      // Add edge if not present
+      if (!result.edges.find((e: GraphEdge) => e.from === he.from && e.to === he.to && e.token === he.token)) {
+        result.edges.push(he);
+      }
+    }
 
     // Cache for 1 hour
     await kvCommand(["SET", CACHE_KEY, JSON.stringify(result), "EX", CACHE_TTL]);
