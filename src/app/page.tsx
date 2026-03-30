@@ -244,7 +244,7 @@ export default function Home() {
           </p>
           <nav className="mt-4 flex gap-4 text-xs">
             <a
-              href="/investigation"
+              href="/wallet"
               className="text-zinc-600 hover:text-white transition-colors"
             >
               Wallet Tracker
@@ -641,7 +641,7 @@ export default function Home() {
             wallet ecosystem. Tracks the main wallet, three secondary wallets, and the intern wallet with on-chain transaction flows.
           </p>
           <a
-            href="/investigation"
+            href="/wallet"
             className="inline-block text-sm text-zinc-500 hover:text-white transition-colors mt-3"
           >
             View wallet graph →
