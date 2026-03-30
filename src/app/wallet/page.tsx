@@ -246,6 +246,13 @@ export default function WalletTracker() {
         </div>
       </div>
 
+      {/* Explainer */}
+      <div className="px-6 py-3 border-b border-zinc-900/50 text-xs text-zinc-600 max-w-2xl leading-relaxed">
+        Live map of @LobstarWilde&apos;s on-chain activity. Green lines are $LOBSTAR transfers, purple lines are SOL
+        transfers (&ge;10 SOL). Grey nodes are external wallets that sent or received funds. Data refreshes hourly
+        via Helius.
+      </div>
+
       {/* Wallet summary bar */}
       <div className="px-6 py-3 border-b border-zinc-900/50 flex gap-6 text-xs overflow-x-auto">
         {[
