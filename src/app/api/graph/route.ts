@@ -9,7 +9,17 @@ const MAIN_WALLET: Record<string, string> = {
   "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS": "LobstarWilde.sol",
 };
 
-const SECONDARY_WALLETS: Record<string, string> = {};
+const SECONDARY_WALLETS: Record<string, string> = {
+  // Received LOBSTAR from main wallet
+  EpTPPrqzQUgtJaZ7XUUiK3nuHe1MusbjLiQuJx3kNnL6: "Received 52.4M LOBSTAR (emptied)",
+  FkfkYhEgnx17RAeYHKiryZd593MGvyFz2ztam1J6Z3qS: "Received 2.6M LOBSTAR (emptied)",
+  // SOL flows — funded main wallet
+  "3CG2wcUgoEiDVqVWpnDY3Hw1DeSUH9TYdkAdZqUBEJLW": "Sent ~767 SOL to main",
+  HcSfojgcRWT1vMvoo6LtoX53evc8jSWfjvSHQsWnt219: "Sent ~408 SOL to main",
+  // SOL flows — received from main wallet
+  "2jy3ifDeda5qmvyP91jEd6dFJ4k3Yj6ZqqEHp1Lb6igT": "Received ~844 SOL",
+  "3CB3VvNoWo2v1SEMDoRJgjAUBGvNBQRfTMiRdC2wcsqV": "Received 694 SOL",
+};
 
 const KNOWN_LABELS: Record<string, string> = {
   ...MAIN_WALLET,
@@ -101,7 +111,7 @@ async function kvCommand(command: string[]): Promise<unknown> {
   return json.result;
 }
 
-const CACHE_KEY = "graph_wallet_tracker_v6";
+const CACHE_KEY = "graph_wallet_tracker_v7";
 const CACHE_TTL = "3600"; // 1 hour
 
 // ---------------------------------------------------------------------------
