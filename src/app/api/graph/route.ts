@@ -111,7 +111,7 @@ async function kvCommand(command: string[]): Promise<unknown> {
   return json.result;
 }
 
-const CACHE_KEY = "graph_wallet_tracker_v7";
+const CACHE_KEY = "graph_wallet_tracker_v8";
 const CACHE_TTL = "3600"; // 1 hour
 
 // ---------------------------------------------------------------------------
@@ -193,9 +193,9 @@ function buildGraph(allTxs: HeliusTransaction[]): GraphResult {
 
     if (amount === 0) return;
 
-    // Only show SOL transfers >= 10 SOL between tracked wallets
+    // Only show transfers where BOTH sides are tracked wallets
     const trackedAddresses = new Set(Object.keys(KNOWN_LABELS));
-    if (!trackedAddresses.has(from) && !trackedAddresses.has(to)) return;
+    if (!trackedAddresses.has(from) || !trackedAddresses.has(to)) return;
 
     // Filter: SOL must be >= threshold, skip random token spam entirely
     if (token === "SOL" && amount < DUST_THRESHOLD_SOL) return;
