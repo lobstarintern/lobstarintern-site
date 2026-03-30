@@ -40,14 +40,12 @@ interface GraphData {
 const TYPE_COLORS: Record<string, string> = {
   main: "#22c55e",
   secondary: "#3b82f6",
-  intern: "#06b6d4",
   unknown: "#52525b",
 };
 
 const TYPE_LABELS: Record<string, string> = {
   main: "Main",
   secondary: "Secondary",
-  intern: "Intern",
   unknown: "External",
 };
 
@@ -81,7 +79,7 @@ export default function WalletTracker() {
   const { flowNodes, flowEdges } = useMemo(() => {
     if (!graphData) return { flowNodes: [], flowEdges: [] };
 
-    const typeOrder = ["main", "intern", "secondary", "unknown"];
+    const typeOrder = ["main", "secondary", "unknown"];
     const grouped: Record<string, GraphNode[]> = {};
     for (const node of graphData.nodes) {
       const t = node.type || "unknown";

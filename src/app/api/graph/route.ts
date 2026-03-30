@@ -15,14 +15,9 @@ const SECONDARY_WALLETS: Record<string, string> = {
   H292B1VbSvD6GuUmSvUvfQstg1Acfzog796uQ7d1ccCw: "Secondary C",
 };
 
-const INTERN_WALLET: Record<string, string> = {
-  "8iBF33H1oxo2QQWLY1yzHXs2zyaPRtopPGbphuRGfsZq": "LobstarIntern.sol",
-};
-
 const KNOWN_LABELS: Record<string, string> = {
   ...MAIN_WALLET,
   ...SECONDARY_WALLETS,
-  ...INTERN_WALLET,
 };
 
 const PROGRAM_ADDRESSES = new Set([
@@ -41,7 +36,7 @@ const DUST_THRESHOLD_SOL = 10; // Only show transfers >= 10 SOL
 interface GraphNode {
   id: string;
   label: string;
-  type: "main" | "secondary" | "intern" | "unknown";
+  type: "main" | "secondary" | "unknown";
   balance?: number;
 }
 
@@ -107,7 +102,7 @@ async function kvCommand(command: string[]): Promise<unknown> {
   return json.result;
 }
 
-const CACHE_KEY = "graph_wallet_tracker_v3";
+const CACHE_KEY = "graph_wallet_tracker_v4";
 const CACHE_TTL = "3600"; // 1 hour
 
 // ---------------------------------------------------------------------------
@@ -161,15 +156,13 @@ function buildGraph(allTxs: HeliusTransaction[]): GraphResult {
 
     const mainLabel = MAIN_WALLET[address];
     const secondaryLabel = SECONDARY_WALLETS[address];
-    const internLabel = INTERN_WALLET[address];
 
     let type: GraphNode["type"] = "unknown";
     if (mainLabel) type = "main";
     else if (secondaryLabel) type = "secondary";
-    else if (internLabel) type = "intern";
 
     const label =
-      mainLabel ?? secondaryLabel ?? internLabel ?? address.slice(0, 4) + "..." + address.slice(-4);
+      mainLabel ?? secondaryLabel ?? address.slice(0, 4) + "..." + address.slice(-4);
 
     nodeMap.set(address, {
       id: address,
@@ -289,10 +282,7 @@ export async function GET() {
 
     // Fetch full history for main wallet, lighter for secondaries
     const mainAddr = Object.keys(MAIN_WALLET)[0];
-    const otherAddrs = [
-      ...Object.keys(SECONDARY_WALLETS),
-      ...Object.keys(INTERN_WALLET),
-    ];
+    const otherAddrs = Object.keys(SECONDARY_WALLETS);
 
     const [mainTxs, ...otherTxArrays] = await Promise.all([
       fetchTransactions(mainAddr, apiKey), // Full 1000 tx history
