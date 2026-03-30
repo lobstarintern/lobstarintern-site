@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // ---------------------------------------------------------------------------
 // Tracked wallets — @LobstarWilde ecosystem
@@ -107,7 +107,7 @@ async function kvCommand(command: string[]): Promise<unknown> {
   return json.result;
 }
 
-const CACHE_KEY = "graph_wallet_tracker_v2";
+const CACHE_KEY = "graph_wallet_tracker_v3";
 const CACHE_TTL = "3600"; // 1 hour
 
 // ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ async function fetchTransactions(
 ): Promise<HeliusTransaction[]> {
   const allTxs: HeliusTransaction[] = [];
   let before: string | undefined;
-  const MAX_PAGES = 3; // Up to 300 transactions per wallet
+  const MAX_PAGES = 10; // Up to 1000 transactions per wallet — full history
 
   for (let page = 0; page < MAX_PAGES; page++) {
     let url = `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`;
@@ -287,15 +287,18 @@ export async function GET() {
       return Response.json({ error: "HELIUS_API_KEY not configured" }, { status: 500 });
     }
 
-    // Fetch transactions for all tracked wallets in parallel
-    const addresses = [
-      ...Object.keys(MAIN_WALLET),
+    // Fetch full history for main wallet, lighter for secondaries
+    const mainAddr = Object.keys(MAIN_WALLET)[0];
+    const otherAddrs = [
       ...Object.keys(SECONDARY_WALLETS),
       ...Object.keys(INTERN_WALLET),
     ];
-    const txArrays = await Promise.all(
-      addresses.map((addr) => fetchTransactions(addr, apiKey)),
-    );
+
+    const [mainTxs, ...otherTxArrays] = await Promise.all([
+      fetchTransactions(mainAddr, apiKey), // Full 1000 tx history
+      ...otherAddrs.map((addr) => fetchTransactions(addr, apiKey)),
+    ]);
+    const txArrays = [mainTxs, ...otherTxArrays];
 
     // Deduplicate transactions by signature
     const seen = new Set<string>();
