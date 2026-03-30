@@ -264,14 +264,19 @@ function buildGraph(allTxs: HeliusTransaction[]): GraphResult {
 // Route handler
 // ---------------------------------------------------------------------------
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Check cache first
-    const cached = (await kvCommand(["GET", CACHE_KEY])) as string | null;
-    if (cached) {
-      const data = JSON.parse(cached);
-      data.cached = true;
-      return Response.json(data);
+    const url = new URL(request.url);
+    const forceRefresh = url.searchParams.get("refresh") === "1";
+
+    // Check cache first (skip if refresh requested)
+    if (!forceRefresh) {
+      const cached = (await kvCommand(["GET", CACHE_KEY])) as string | null;
+      if (cached) {
+        const data = JSON.parse(cached);
+        data.cached = true;
+        return Response.json(data);
+      }
     }
 
     const apiKey = process.env.HELIUS_API_KEY;
