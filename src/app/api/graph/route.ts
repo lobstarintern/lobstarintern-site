@@ -24,7 +24,10 @@ const PROGRAM_ADDRESSES = new Set([
   "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // SPL Token
   "11111111111111111111111111111111", // System Program
   "ComputeBudget111111111111111111111111111111", // Compute Budget
-  "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA", // PumpSwap
+  "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA", // PumpSwap program
+  "AADJrfmWoHVXZhF1UkbHvNC5tqrBpkGdSaxtMYteDm2x", // PumpSwap LOBSTAR pool
+  "4b3Q2hMmeimC3D8xgPXwH9NGnYw6ZLdLAdik6RdgTPXy", // LOBSTAR token account (pool)
+  "D16sRA7AgPqhPhRVoyvNHtJJPXjfccH5JTZhnr1MDWwo", // Token program variant
 ]);
 
 const DUST_THRESHOLD_SOL = 10; // Only show transfers >= 10 SOL
@@ -102,7 +105,7 @@ async function kvCommand(command: string[]): Promise<unknown> {
   return json.result;
 }
 
-const CACHE_KEY = "graph_wallet_tracker_v4";
+const CACHE_KEY = "graph_wallet_tracker_v5";
 const CACHE_TTL = "3600"; // 1 hour
 
 // ---------------------------------------------------------------------------
