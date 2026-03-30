@@ -320,11 +320,11 @@ export async function GET(request: Request) {
 
     // Add verified historical edges that Helius can't reach (too old for enhanced API)
     const LOBSTAR_MINT = "AVF9F4C4j8b1Kh4BmNHqybDaHgnZpJ7W7yLvL7hUpump";
-    const historicalEdges: Array<{ from: string; to: string; amount: number; token: string; count: number; signatures: string[] }> = [
+    const historicalEdges: GraphEdge[] = [
       {
         from: "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS",
         to: "EpTPPrqzQUgtJaZ7XUUiK3nuHe1MusbjLiQuJx3kNnL6",
-        amount: 52_439_284, token: LOBSTAR_MINT, count: 1,
+        amount: 52_439_284, token: LOBSTAR_MINT, count: 1, timestamp: 1709000000,
         signatures: ["44y5FBM1aiHV83cv76eNQ4tQR3dnk8krjZBb9jwGrDEZLE5FCzeBX9Xi3wHRfTB6eFtJU7a5XvM1pz5AxTor2A4U"],
       },
     ];
