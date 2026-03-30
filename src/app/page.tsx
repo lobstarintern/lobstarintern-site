@@ -83,8 +83,7 @@ interface BotStats {
   crons_total: number;
   cron_errors: number;
   gateway_uptime_days: number;
-  hack_wallets_monitored: number;
-  hack_alerts: number;
+  wallets_monitored: number;
 }
 
 function timeAgo(ts: number): string {
@@ -306,10 +305,6 @@ export default function Home() {
               value={botStats ? `${botStats.gateway_uptime_days} days` : "—"}
             />
             <StatRow label="Wallet Monitor" value="Active" />
-            <StatRow
-              label="Hack Tracker"
-              value={botStats ? `${botStats.hack_wallets_monitored} wallets · ${botStats.hack_alerts} alerts` : "Active"}
-            />
           </div>
         </section>
 
@@ -620,13 +615,13 @@ export default function Home() {
           )}
         </section>
 
-        {/* Investigation */}
+        {/* Wallet Tracker */}
         <section className="mb-10">
           <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em] mb-4">
-            Investigation
+            Wallet Tracker
           </h2>
           <p className="text-sm text-zinc-500 leading-relaxed">
-            The{" "}
+            Live visualization of the{" "}
             <a
               href="https://x.com/LobstarWilde"
               className="text-zinc-400 hover:text-white transition-colors"
@@ -635,31 +630,13 @@ export default function Home() {
             >
               @LobstarWilde
             </a>{" "}
-            X account was compromised. We are tracking the attacker across 7
-            wallets and building a list of affected addresses. If you were
-            affected, DM{" "}
-            <a
-              href="https://x.com/LobstarIntern"
-              className="text-zinc-400 hover:text-white transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              @LobstarIntern
-            </a>{" "}
-            or email{" "}
-            <a
-              href="mailto:lobstarintern@gmail.com"
-              className="text-zinc-400 hover:text-white transition-colors"
-            >
-              lobstarintern@gmail.com
-            </a>
-            .
+            wallet ecosystem. Tracks the main wallet, three secondary wallets, and the intern wallet with on-chain transaction flows.
           </p>
           <a
             href="/investigation"
             className="inline-block text-sm text-zinc-500 hover:text-white transition-colors mt-3"
           >
-            View fund flow graph →
+            View wallet graph →
           </a>
         </section>
 

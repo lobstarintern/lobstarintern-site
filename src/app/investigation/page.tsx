@@ -38,12 +38,17 @@ interface GraphData {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  hacker: "#ef4444",
-  mixer: "#a855f7",
-  known: "#06b6d4",
-  victim: "#3b82f6",
-  exchange: "#f59e0b",
+  main: "#22c55e",
+  secondary: "#3b82f6",
+  intern: "#06b6d4",
   unknown: "#52525b",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  main: "Main",
+  secondary: "Secondary",
+  intern: "Intern",
+  unknown: "External",
 };
 
 function truncAddr(addr: string): string {
@@ -54,7 +59,7 @@ function nodeColor(type: string): string {
   return TYPE_COLORS[type] || TYPE_COLORS.unknown;
 }
 
-export default function Investigation() {
+export default function WalletTracker() {
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,12 +77,11 @@ export default function Investigation() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Layout nodes in a force-like arrangement
+  // Layout nodes — tracked wallets center, externals on outer ring
   const { flowNodes, flowEdges } = useMemo(() => {
     if (!graphData) return { flowNodes: [], flowEdges: [] };
 
-    // Position nodes in concentric rings by type
-    const typeOrder = ["hacker", "mixer", "privacy", "victim", "known", "dex", "exchange", "unknown"];
+    const typeOrder = ["main", "intern", "secondary", "unknown"];
     const grouped: Record<string, GraphNode[]> = {};
     for (const node of graphData.nodes) {
       const t = node.type || "unknown";
@@ -90,9 +94,41 @@ export default function Investigation() {
     for (const type of typeOrder) {
       const nodes = grouped[type];
       if (!nodes?.length) continue;
-      const radius = 200 + ringIndex * 250;
+
+      if (type === "main") {
+        // Center the main wallet
+        nodes.forEach((node) => {
+          positioned.push({
+            id: node.id,
+            position: { x: 600, y: 400 },
+            data: {
+              label: (
+                <div className="text-center">
+                  <div className="text-[10px] font-bold">{node.label}</div>
+                  <div className="text-[8px] opacity-60">{truncAddr(node.id)}</div>
+                </div>
+              ),
+            },
+            style: {
+              background: nodeColor(node.type),
+              color: "#fff",
+              border: `2px solid ${nodeColor(node.type)}`,
+              borderRadius: "8px",
+              padding: "10px 14px",
+              fontSize: "10px",
+              minWidth: "100px",
+              textAlign: "center" as const,
+              boxShadow: `0 0 20px ${nodeColor(node.type)}40`,
+            },
+          });
+        });
+        ringIndex++;
+        continue;
+      }
+
+      const radius = 150 + ringIndex * 220;
       const angleStep = (2 * Math.PI) / Math.max(nodes.length, 1);
-      const offset = ringIndex * 0.3; // stagger rings
+      const offset = ringIndex * 0.5;
       nodes.forEach((node, i) => {
         const angle = angleStep * i + offset;
         positioned.push({
@@ -127,8 +163,8 @@ export default function Investigation() {
     const edges = graphData.edges.map((edge, i) => {
       const amtLabel =
         edge.amount > 0.001
-          ? `${edge.amount.toFixed(edge.token === "SOL" ? 2 : 0)} ${edge.token}`
-          : edge.token;
+          ? `${edge.amount.toFixed(edge.token === "SOL" ? 2 : 0)} ${edge.token === "SOL" ? "SOL" : truncAddr(edge.token)}`
+          : edge.token === "SOL" ? "SOL" : truncAddr(edge.token);
       return {
         id: `e-${i}`,
         source: edge.from,
@@ -188,21 +224,13 @@ export default function Investigation() {
               Home
             </Link>
             <span className="text-zinc-800">|</span>
-            <span className="text-white text-sm">Investigation</span>
+            <span className="text-white text-sm">Wallet Tracker</span>
           </div>
           <h1 className="text-white font-bold mt-1">
-            Fund Flow — @LobstarWilde Account Compromise
+            Wallet Tracker &mdash; @LobstarWilde
           </h1>
-          <div className="mt-2 px-3 py-2 bg-green-950/50 border border-green-900/50 rounded text-xs">
-            <p className="text-green-400 font-bold">CASE STATUS: RESOLVED</p>
-            <p className="text-green-400/70 mt-1">
-              Account restored March 27, 2026. Attacker locked out. Full report submitted to IC3 (FBI Internet Crime Complaint Center),
-              relevant centralized exchanges, and blockchain analytics partners. 9 attacker wallets remain under automated monitoring.
-              Fund flow visualization preserved below for law enforcement reference.
-            </p>
-          </div>
           <p className="text-zinc-600 text-xs mt-1">
-            Tracing attacker funds across {graphData?.nodes.length || "..."} wallets
+            Tracking {graphData?.nodes.length || "..."} wallets across the ecosystem
             {graphData?.cached && " (cached)"}
           </p>
         </div>
@@ -214,10 +242,33 @@ export default function Investigation() {
                 className="inline-block w-2 h-2 rounded-full"
                 style={{ background: color }}
               />
-              <span className="text-zinc-500 capitalize">{type}</span>
+              <span className="text-zinc-500">{TYPE_LABELS[type] || type}</span>
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Wallet summary bar */}
+      <div className="px-6 py-3 border-b border-zinc-900/50 flex gap-6 text-xs overflow-x-auto">
+        {[
+          { label: "LobstarWilde.sol", addr: "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS", color: TYPE_COLORS.main },
+          { label: "Secondary A", addr: "C41sWzRvikSo3KH6U8zoejJ7cN5Ctv2ToT5B22U2M4N2", color: TYPE_COLORS.secondary },
+          { label: "Secondary B", addr: "Cv9St5tDTGwpbG5UVvM6QvFmf3FYSXc14W9BYvQN5wAZ", color: TYPE_COLORS.secondary },
+          { label: "Secondary C", addr: "H292B1VbSvD6GuUmSvUvfQstg1Acfzog796uQ7d1ccCw", color: TYPE_COLORS.secondary },
+          { label: "LobstarIntern.sol", addr: "8iBF33H1oxo2QQWLY1yzHXs2zyaPRtopPGbphuRGfsZq", color: TYPE_COLORS.intern },
+        ].map((w) => (
+          <a
+            key={w.addr}
+            href={`https://solscan.io/account/${w.addr}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 hover:text-white transition-colors text-zinc-500 whitespace-nowrap"
+          >
+            <span className="inline-block w-2 h-2 rounded-full" style={{ background: w.color }} />
+            <span className="font-bold">{w.label}</span>
+            <span className="text-zinc-700">{truncAddr(w.addr)}</span>
+          </a>
+        ))}
       </div>
 
       {/* Graph */}
@@ -225,7 +276,7 @@ export default function Investigation() {
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-zinc-600 text-sm animate-pulse">
-              Tracing transactions...
+              Loading wallet data...
             </p>
           </div>
         ) : error ? (
@@ -278,10 +329,10 @@ export default function Investigation() {
                   <p>
                     Type:{" "}
                     <span
-                      className="capitalize font-bold"
+                      className="font-bold"
                       style={{ color: nodeColor(selectedNode.type) }}
                     >
-                      {selectedNode.type}
+                      {TYPE_LABELS[selectedNode.type] || selectedNode.type}
                     </span>
                   </p>
                   <p className="break-all text-zinc-600">{selectedNode.id}</p>
@@ -306,7 +357,7 @@ export default function Investigation() {
                       {selectedEdge.amount.toLocaleString(undefined, {
                         maximumFractionDigits: 4,
                       })}{" "}
-                      {selectedEdge.token}
+                      {selectedEdge.token === "SOL" ? "SOL" : truncAddr(selectedEdge.token)}
                     </span>
                   </p>
                   <p>Transactions: {selectedEdge.count}</p>

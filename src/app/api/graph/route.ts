@@ -2,37 +2,33 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // ---------------------------------------------------------------------------
-// Known addresses
+// Tracked wallets — @LobstarWilde ecosystem
 // ---------------------------------------------------------------------------
 
-const HACKER_WALLETS: Record<string, string> = {
-  "2NurbsXSFyvdWZUuiPEDmT7ad2GxYAP2YYDRq176ct7u": "Origin Wallet",
-  "8REpwxrWDGi4KsbHNnCfQimBAy6j57nqeN8wGZGE3tsB": "Intermediary",
-  GfiVHZfX8op1QJzNNktrsjhL7yag33oRR6gfPpjEqgP4: "Creator / Funder",
-  HJpdKEAxoxauv19jEtL3tiZgmrP9uPQfB5wTAdEmFzru: "Satellite 1",
-  FWBgQsiHdmbZhVrJnE6DpeLnotuTRSPAahFBrU3troDc: "Satellite 2",
-  FqtA2BSoJ3KpJCjz5NV6XJDMNcRTADPtELjJuLExqjqh: "Satellite 3",
+const MAIN_WALLET: Record<string, string> = {
+  "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS": "LobstarWilde.sol",
 };
 
-// Mixer/privacy wallets — separated so they get "mixer" node type
-const MIXER_WALLETS: Record<string, string> = {
-  "4AV2Qzp3N4c9RfzyEbNZs2wqWfW4EwKnnxFAZCndvfGh": "PrivacyCash Pool / Drain",
-  AF8VuwCncKd5ZBnLYYnMjqh4vLch8mjqE75sFe5ZjRFW: "PrivacyCash Relayer",
+const SECONDARY_WALLETS: Record<string, string> = {
+  C41sWzRvikSo3KH6U8zoejJ7cN5Ctv2ToT5B22U2M4N2: "Secondary A",
+  Cv9St5tDTGwpbG5UVvM6QvFmf3FYSXc14W9BYvQN5wAZ: "Secondary B",
+  H292B1VbSvD6GuUmSvUvfQstg1Acfzog796uQ7d1ccCw: "Secondary C",
+};
+
+const INTERN_WALLET: Record<string, string> = {
+  "8iBF33H1oxo2QQWLY1yzHXs2zyaPRtopPGbphuRGfsZq": "LobstarIntern.sol",
 };
 
 const KNOWN_LABELS: Record<string, string> = {
-  ...HACKER_WALLETS,
-  ...MIXER_WALLETS,
-  "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS": "LobstarWilde.sol",
-  "8iBF33H1oxo2QQWLY1yzHXs2zyaPRtopPGbphuRGfsZq": "LobstarIntern.sol",
+  ...MAIN_WALLET,
+  ...SECONDARY_WALLETS,
+  ...INTERN_WALLET,
 };
 
 const PROGRAM_ADDRESSES = new Set([
   "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // SPL Token
   "11111111111111111111111111111111", // System Program
   "ComputeBudget111111111111111111111111111111", // Compute Budget
-  "9fhQBbumKEFuXtMBDw8AaQyAjCorLGJQiS3skWZdQyQD", // Mixer
-  "L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95", // Lighthouse
   "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA", // PumpSwap
 ]);
 
@@ -45,7 +41,7 @@ const DUST_THRESHOLD_SOL = 0.001;
 interface GraphNode {
   id: string;
   label: string;
-  type: "hacker" | "mixer" | "known" | "victim" | "exchange" | "unknown";
+  type: "main" | "secondary" | "intern" | "unknown";
   balance?: number;
 }
 
@@ -111,8 +107,8 @@ async function kvCommand(command: string[]): Promise<unknown> {
   return json.result;
 }
 
-const CACHE_KEY = "graph_cache";
-const CACHE_TTL = "3600"; // 1 hour (heavier fetch now)
+const CACHE_KEY = "graph_wallet_tracker";
+const CACHE_TTL = "3600"; // 1 hour
 
 // ---------------------------------------------------------------------------
 // Helius fetcher
@@ -124,7 +120,7 @@ async function fetchTransactions(
 ): Promise<HeliusTransaction[]> {
   const allTxs: HeliusTransaction[] = [];
   let before: string | undefined;
-  const MAX_PAGES = 4; // Up to 400 transactions per wallet
+  const MAX_PAGES = 3; // Up to 300 transactions per wallet
 
   for (let page = 0; page < MAX_PAGES; page++) {
     let url = `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`;
@@ -141,7 +137,6 @@ async function fetchTransactions(
     allTxs.push(...txs);
     before = txs[txs.length - 1].signature;
 
-    // Stop if we got fewer than requested (no more pages)
     if (txs.length < 100) break;
   }
 
@@ -164,18 +159,21 @@ function buildGraph(allTxs: HeliusTransaction[]): GraphResult {
     if (PROGRAM_ADDRESSES.has(address)) return;
     if (nodeMap.has(address)) return;
 
-    const hackerLabel = HACKER_WALLETS[address];
-    const mixerLabel = MIXER_WALLETS[address];
-    const knownLabel = KNOWN_LABELS[address];
+    const mainLabel = MAIN_WALLET[address];
+    const secondaryLabel = SECONDARY_WALLETS[address];
+    const internLabel = INTERN_WALLET[address];
 
     let type: GraphNode["type"] = "unknown";
-    if (hackerLabel) type = "hacker";
-    else if (mixerLabel) type = "mixer";
-    else if (knownLabel) type = "known";
+    if (mainLabel) type = "main";
+    else if (secondaryLabel) type = "secondary";
+    else if (internLabel) type = "intern";
+
+    const label =
+      mainLabel ?? secondaryLabel ?? internLabel ?? address.slice(0, 4) + "..." + address.slice(-4);
 
     nodeMap.set(address, {
       id: address,
-      label: knownLabel ?? address.slice(0, 4) + "..." + address.slice(-4),
+      label,
       type,
     });
   }
@@ -194,6 +192,10 @@ function buildGraph(allTxs: HeliusTransaction[]): GraphResult {
     // Filter dust
     if (token === "SOL" && amount < DUST_THRESHOLD_SOL) return;
     if (amount === 0) return;
+
+    // Only include edges where at least one side is a tracked wallet
+    const trackedAddresses = new Set(Object.keys(KNOWN_LABELS));
+    if (!trackedAddresses.has(from) && !trackedAddresses.has(to)) return;
 
     ensureNode(from);
     ensureNode(to);
@@ -283,13 +285,12 @@ export async function GET() {
 
     // Fetch transactions for all tracked wallets in parallel
     const addresses = [
-      ...Object.keys(HACKER_WALLETS),
-      ...Object.keys(MIXER_WALLETS),
+      ...Object.keys(MAIN_WALLET),
+      ...Object.keys(SECONDARY_WALLETS),
+      ...Object.keys(INTERN_WALLET),
     ];
-    // Deduplicate addresses (drain/pool appears in both)
-    const uniqueAddresses = [...new Set(addresses)];
     const txArrays = await Promise.all(
-      uniqueAddresses.map((addr) => fetchTransactions(addr, apiKey)),
+      addresses.map((addr) => fetchTransactions(addr, apiKey)),
     );
 
     // Deduplicate transactions by signature
@@ -306,7 +307,7 @@ export async function GET() {
 
     const result = buildGraph(allTxs);
 
-    // Cache for 15 minutes
+    // Cache for 1 hour
     await kvCommand(["SET", CACHE_KEY, JSON.stringify(result), "EX", CACHE_TTL]);
 
     return Response.json(result);
