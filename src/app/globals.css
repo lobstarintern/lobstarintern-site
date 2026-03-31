@@ -24,3 +24,101 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ── Theme toggle button ── */
+
+.theme-toggle-wrapper {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 50;
+}
+
+.theme-toggle {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid #3f3f46; /* zinc-700 */
+  background: transparent;
+  color: #a1a1aa; /* zinc-400 */
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.theme-toggle:hover {
+  color: #ffffff;
+  border-color: #52525b; /* zinc-600 */
+}
+
+/* ── Light mode overrides ── */
+
+html.light body {
+  background: #fafafa; /* zinc-50 */
+  color: #3f3f46; /* zinc-700 */
+}
+
+html.light .theme-toggle {
+  border-color: #d4d4d8; /* zinc-300 */
+  color: #71717a; /* zinc-500 */
+}
+
+html.light .theme-toggle:hover {
+  color: #18181b; /* zinc-900 */
+  border-color: #a1a1aa; /* zinc-400 */
+}
+
+/* Background overrides */
+html.light .bg-black { background-color: #fafafa !important; }
+html.light .bg-zinc-950\/50,
+html.light .bg-zinc-950 { background-color: #ffffff !important; }
+html.light .bg-zinc-900\/40,
+html.light .bg-zinc-900\/60,
+html.light .bg-zinc-900 { background-color: #f4f4f5 !important; }
+html.light .bg-zinc-800\/80,
+html.light .bg-zinc-800 { background-color: #f4f4f5 !important; }
+
+/* Hover backgrounds */
+html.light .hover\:bg-zinc-900\/40:hover {
+  background-color: #f4f4f5 !important;
+}
+html.light .hover\:bg-zinc-800:hover {
+  background-color: #e4e4e7 !important;
+}
+
+/* Text overrides */
+html.light .text-white { color: #18181b !important; }
+html.light .text-zinc-300 { color: #52525b !important; }
+html.light .text-zinc-400 { color: #71717a !important; }
+html.light .text-zinc-500 { color: #71717a !important; }
+html.light .text-zinc-600 { color: #52525b !important; }
+html.light .text-zinc-700 { color: #a1a1aa !important; }
+html.light .text-zinc-800 { color: #a1a1aa !important; }
+
+/* Border overrides */
+html.light .border-zinc-800\/80,
+html.light .border-zinc-800 { border-color: #e4e4e7 !important; }
+html.light .border-zinc-700\/50,
+html.light .border-zinc-700 { border-color: #d4d4d8 !important; }
+html.light .border-zinc-900\/60,
+html.light .border-zinc-900 { border-color: #e4e4e7 !important; }
+
+/* Divide overrides */
+html.light .divide-zinc-900\/50 > :not(:first-child),
+html.light .divide-zinc-900 > :not(:first-child) {
+  border-color: #e4e4e7 !important;
+}
+
+/* Keep emerald/red accent colors — no override needed */
+
+/* Ring overrides */
+html.light .ring-zinc-800 { --tw-ring-color: #d4d4d8 !important; }
+
+/* Scrollbar / selection */
+html.light ::selection {
+  background: #d4d4d8;
+  color: #18181b;
+}
