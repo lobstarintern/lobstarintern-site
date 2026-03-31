@@ -5,6 +5,8 @@ const WALLETS: Record<string, string> = {
   wilde: "83XBMJZEgQ13ZPFTaLr1ktNkUDHVmWpZRMN7AL7BXxnS",
 };
 
+const LOBSTAR_MINT = "AVF9F4C4j8b1Kh4BmNHqybDaHgnZpJ7W7yLvL7hUpump";
+
 interface RawAccountData {
   account: string;
   nativeBalanceChange: number;
@@ -70,7 +72,6 @@ function processTransaction(tx: RawTransaction, walletAddress: string) {
     if (acct.account === walletAddress) continue;
     for (const tc of acct.tokenBalanceChanges ?? []) {
       if (tc.userAccount === walletAddress) {
-        // Check we haven't already added this
         if (!tokenChanges.find((t) => t.mint === tc.mint)) {
           tokenChanges.push({
             mint: tc.mint,
@@ -84,6 +85,40 @@ function processTransaction(tx: RawTransaction, walletAddress: string) {
     }
   }
 
+  // Detect LOBSTAR buy: SOL goes out, LOBSTAR comes in
+  const lobstarChange = tokenChanges.find((tc) => tc.mint === LOBSTAR_MINT);
+  const isLobstarBuy =
+    solChange < -0.001 && lobstarChange && lobstarChange.amount > 0;
+  const isLobstarSell =
+    solChange > 0.001 && lobstarChange && lobstarChange.amount < 0;
+
+  // Extract native transfers relevant to this wallet
+  const nativeTransfers = (tx.nativeTransfers ?? [])
+    .filter(
+      (nt) =>
+        nt.fromUserAccount === walletAddress ||
+        nt.toUserAccount === walletAddress,
+    )
+    .map((nt) => ({
+      from: nt.fromUserAccount,
+      to: nt.toUserAccount,
+      amount: nt.amount / 1e9,
+    }));
+
+  // Extract token transfers relevant to this wallet
+  const tokenTransfers = (tx.tokenTransfers ?? [])
+    .filter(
+      (tt) =>
+        tt.fromUserAccount === walletAddress ||
+        tt.toUserAccount === walletAddress,
+    )
+    .map((tt) => ({
+      from: tt.fromUserAccount ?? "",
+      to: tt.toUserAccount ?? "",
+      amount: tt.tokenAmount,
+      mint: tt.mint,
+    }));
+
   return {
     signature: tx.signature,
     timestamp: tx.timestamp,
@@ -94,6 +129,12 @@ function processTransaction(tx: RawTransaction, walletAddress: string) {
     feePayer: tx.feePayer,
     solChange,
     tokenChanges,
+    nativeTransfers,
+    tokenTransfers,
+    isLobstarBuy: !!isLobstarBuy,
+    isLobstarSell: !!isLobstarSell,
+    lobstarAmount: lobstarChange?.amount ?? 0,
+    solAmount: Math.abs(solChange),
   };
 }
 
@@ -108,7 +149,7 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(
-      `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${process.env.HELIUS_API_KEY}&limit=15`,
+      `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${process.env.HELIUS_API_KEY}&limit=30`,
       { cache: "no-store" },
     );
 
