@@ -159,9 +159,39 @@ function fmtToken(n: number): string {
   return fmt(n, Math.abs(n) < 1 ? 6 : 2);
 }
 
+// ── Analytics types ──────────────────────────────────────────────
+
+interface AnalyticsDayStats {
+  date: string;
+  inflowSol: number;
+  outflowSol: number;
+  balanceChange: number;
+}
+
+interface AnalyticsAddressFlow {
+  address: string;
+  transfers: number;
+  totalSol: number;
+}
+
+interface AnalyticsData {
+  transferCount: number;
+  firstTxDate: string;
+  activeAgeDays: number;
+  uniqueDaysActive: number;
+  longestStreak: number;
+  dailyStats: AnalyticsDayStats[];
+  topInflow: AnalyticsAddressFlow[];
+  topOutflow: AnalyticsAddressFlow[];
+  balanceHistory: { date: string; balance: number }[];
+  timestamp: string;
+  cached?: boolean;
+  error?: string;
+}
+
 // ── Tab types ──────────────────────────────────────────────────────
 
-type Tab = "transactions" | "transfers" | "activities" | "portfolio";
+type Tab = "transactions" | "transfers" | "activities" | "portfolio" | "analytics";
 
 // ── Components ─────────────────────────────────────────────────────
 
@@ -473,16 +503,204 @@ function PortfolioTab({ portfolio, loading }: { portfolio: PortfolioData | null;
   );
 }
 
+// ── Analytics Tab Component ──────────────────────────────────────────
+
+function AnalyticsTab({ analytics, loading }: { analytics: AnalyticsData | null; loading: boolean }) {
+  if (loading && !analytics) {
+    return <div className="text-zinc-700 text-sm px-4 py-6 animate-pulse">Loading analytics...</div>;
+  }
+
+  if (!analytics) {
+    return <p className="text-zinc-700 text-sm px-4 py-6">No analytics data available.</p>;
+  }
+
+  // Chart helpers
+  const maxInOut = Math.max(
+    ...analytics.dailyStats.map((d) => Math.max(d.inflowSol, d.outflowSol)),
+    0.001,
+  );
+  const maxBalance = Math.max(...analytics.balanceHistory.map((d) => d.balance), 0.001);
+
+  return (
+    <div className="p-4 space-y-6">
+      {/* Top Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="border border-zinc-800/60 rounded-lg p-3 bg-zinc-900/30">
+          <p className="text-zinc-600 text-[10px] uppercase tracking-wider mb-1">Transfer Count</p>
+          <p className="text-white font-bold text-lg">{analytics.transferCount.toLocaleString()}</p>
+        </div>
+        <div className="border border-zinc-800/60 rounded-lg p-3 bg-zinc-900/30">
+          <p className="text-zinc-600 text-[10px] uppercase tracking-wider mb-1">Active Age</p>
+          <p className="text-white font-bold text-lg">{analytics.activeAgeDays}d</p>
+          <p className="text-zinc-700 text-[10px] mt-0.5">since {analytics.firstTxDate}</p>
+        </div>
+        <div className="border border-zinc-800/60 rounded-lg p-3 bg-zinc-900/30">
+          <p className="text-zinc-600 text-[10px] uppercase tracking-wider mb-1">Unique Days Active</p>
+          <p className="text-white font-bold text-lg">{analytics.uniqueDaysActive}</p>
+        </div>
+        <div className="border border-zinc-800/60 rounded-lg p-3 bg-zinc-900/30">
+          <p className="text-zinc-600 text-[10px] uppercase tracking-wider mb-1">Longest Streak</p>
+          <p className="text-white font-bold text-lg">{analytics.longestStreak}d</p>
+        </div>
+      </div>
+
+      {/* Balance History Chart */}
+      <div>
+        <h3 className="text-[10px] text-zinc-600 uppercase tracking-widest mb-3">Account SOL Balance (7d)</h3>
+        <div className="border border-zinc-800/60 rounded-lg p-4 bg-zinc-900/20">
+          <div className="flex items-end gap-1 h-32">
+            {analytics.balanceHistory.map((d, i) => {
+              const heightPct = maxBalance > 0 ? (d.balance / maxBalance) * 100 : 0;
+              return (
+                <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[9px] text-zinc-600">{fmt(d.balance, 2)}</span>
+                  <div className="w-full relative" style={{ height: "100px" }}>
+                    <div
+                      className="absolute bottom-0 left-0 right-0 rounded-t"
+                      style={{
+                        height: `${Math.max(heightPct, 2)}%`,
+                        background: `linear-gradient(to top, rgba(16,185,129,0.3), rgba(16,185,129,0.08))`,
+                        borderTop: "2px solid rgba(16,185,129,0.6)",
+                      }}
+                    />
+                  </div>
+                  <span className="text-[9px] text-zinc-700">
+                    {new Date(d.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          {analytics.balanceHistory.every((d) => d.balance === 0) && (
+            <p className="text-zinc-700 text-xs text-center mt-2">Balance data based on recent transfer deltas only</p>
+          )}
+        </div>
+      </div>
+
+      {/* Daily Inflow/Outflow Bar Chart */}
+      <div>
+        <h3 className="text-[10px] text-zinc-600 uppercase tracking-widest mb-3">Daily SOL Transfer In/Out (7d)</h3>
+        <div className="border border-zinc-800/60 rounded-lg p-4 bg-zinc-900/20">
+          <div className="flex items-end gap-1 h-32">
+            {analytics.dailyStats.map((d) => {
+              const inflowPct = maxInOut > 0 ? (d.inflowSol / maxInOut) * 100 : 0;
+              const outflowPct = maxInOut > 0 ? (d.outflowSol / maxInOut) * 100 : 0;
+              return (
+                <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                  <div className="w-full flex gap-px justify-center" style={{ height: "100px", alignItems: "flex-end" }}>
+                    <div
+                      className="w-[45%] rounded-t bg-emerald-500/40 border-t border-emerald-500/60"
+                      style={{ height: `${Math.max(inflowPct, 1)}%` }}
+                      title={`In: ${fmt(d.inflowSol, 4)} SOL`}
+                    />
+                    <div
+                      className="w-[45%] rounded-t bg-red-500/40 border-t border-red-500/60"
+                      style={{ height: `${Math.max(outflowPct, 1)}%` }}
+                      title={`Out: ${fmt(d.outflowSol, 4)} SOL`}
+                    />
+                  </div>
+                  <span className="text-[9px] text-zinc-700">
+                    {new Date(d.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-4 mt-3 justify-center">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/50" />
+              <span className="text-[10px] text-zinc-600">Inflow</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-red-500/50" />
+              <span className="text-[10px] text-zinc-600">Outflow</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Inflow / Top Outflow */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Top Inflow */}
+        <div>
+          <h3 className="text-[10px] text-zinc-600 uppercase tracking-widest mb-2">Top Inflow Addresses</h3>
+          <div className="border border-zinc-800/60 rounded-lg bg-zinc-900/20 overflow-hidden">
+            {analytics.topInflow.length === 0 ? (
+              <p className="text-zinc-700 text-xs px-3 py-4">No inflows in recent history</p>
+            ) : (
+              <div className="divide-y divide-zinc-900/40">
+                {analytics.topInflow.map((a) => (
+                  <a
+                    key={a.address}
+                    href={`https://solscan.io/account/${a.address}`}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-zinc-900/40 transition-colors"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-zinc-400 text-xs font-mono">{truncAddr(a.address)}</span>
+                      <span className="text-zinc-700 text-[10px] ml-2">{a.transfers} txs</span>
+                    </div>
+                    <span className="text-emerald-500 text-xs font-medium shrink-0">
+                      +{fmt(a.totalSol, 2)} SOL
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Outflow */}
+        <div>
+          <h3 className="text-[10px] text-zinc-600 uppercase tracking-widest mb-2">Top Outflow Addresses</h3>
+          <div className="border border-zinc-800/60 rounded-lg bg-zinc-900/20 overflow-hidden">
+            {analytics.topOutflow.length === 0 ? (
+              <p className="text-zinc-700 text-xs px-3 py-4">No outflows in recent history</p>
+            ) : (
+              <div className="divide-y divide-zinc-900/40">
+                {analytics.topOutflow.map((a) => (
+                  <a
+                    key={a.address}
+                    href={`https://solscan.io/account/${a.address}`}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-zinc-900/40 transition-colors"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-zinc-400 text-xs font-mono">{truncAddr(a.address)}</span>
+                      <span className="text-zinc-700 text-[10px] ml-2">{a.transfers} txs</span>
+                    </div>
+                    <span className="text-red-500/80 text-xs font-medium shrink-0">
+                      -{fmt(a.totalSol, 2)} SOL
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {analytics.cached && (
+        <p className="text-zinc-800 text-[10px] text-center">Cached data &middot; refreshes hourly</p>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ─────────────────────────────────────────────────
 
 export default function Home() {
   const [wallets, setWallets] = useState<WalletData | null>(null);
   const [txData, setTxData] = useState<TransactionData | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [views, setViews] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("activities");
   const [loading, setLoading] = useState(true);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
@@ -510,11 +728,31 @@ export default function Home() {
     }
   }, []);
 
+  // Fetch analytics when tab is selected
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch("/api/analytics");
+      const data = await res.json();
+      if (!data.error) setAnalytics(data);
+    } catch {
+      // silent
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === "portfolio" && !portfolio) {
       fetchPortfolio();
     }
   }, [activeTab, portfolio, fetchPortfolio]);
+
+  useEffect(() => {
+    if (activeTab === "analytics" && !analytics) {
+      fetchAnalytics();
+    }
+  }, [activeTab, analytics, fetchAnalytics]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -561,6 +799,7 @@ export default function Home() {
     { key: "transactions", label: "Transactions" },
     { key: "transfers", label: "Transfers" },
     { key: "portfolio", label: "Portfolio" },
+    { key: "analytics", label: "Analytics" },
   ];
 
   return (
@@ -705,6 +944,9 @@ export default function Home() {
                 )}
                 {activeTab === "portfolio" && (
                   <PortfolioTab portfolio={portfolio} loading={portfolioLoading} />
+                )}
+                {activeTab === "analytics" && (
+                  <AnalyticsTab analytics={analytics} loading={analyticsLoading} />
                 )}
               </>
             )}
