@@ -227,7 +227,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <main className="flex-1 max-w-2xl mx-auto px-6 py-16 w-full">
         {/* Header */}
-        <header className="mb-16">
+        <header className="mb-10">
           <h1 className="text-2xl text-white font-bold tracking-tight">
             LobstarIntern
           </h1>
@@ -252,6 +252,226 @@ export default function Home() {
           </nav>
         </header>
 
+        {/* === HERO: @LobstarWilde Portfolio === */}
+        {loading && !wallets ? (
+          <section className="mb-14">
+            <div className="text-zinc-700 text-sm animate-pulse">
+              Loading portfolio...
+            </div>
+          </section>
+        ) : wallets ? (
+          <section className="mb-14">
+            {(() => {
+              const w = wallets.wilde;
+              const totalUsd = w.solUsd + w.lobstarUsd;
+              return (
+                <div className="border border-zinc-800 rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <a
+                        href={`https://solscan.io/account/${w.address}`}
+                        className="text-white text-lg font-bold hover:text-zinc-300 transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        @LobstarWilde
+                      </a>
+                      <a
+                        href={`https://solscan.io/account/${w.address}`}
+                        className="block text-zinc-700 text-xs mt-1 hover:text-zinc-500 transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {w.address}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${error ? "bg-red-500" : "bg-zinc-400 animate-pulse"}`}
+                      />
+                      <span className={`text-xs uppercase tracking-wider ${error ? "text-red-400" : "text-zinc-500"}`}>
+                        {loading ? "Updating" : error ? "Error" : "Live"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Total Value */}
+                  <div className="mb-6">
+                    <p className="text-zinc-600 text-xs uppercase tracking-wider mb-1">Total Value</p>
+                    <p className="text-white text-3xl font-bold tracking-tight">
+                      {totalUsd > 0 ? fmtUsd(totalUsd) : "—"}
+                    </p>
+                    {wallets.solPrice > 0 && (
+                      <p className="text-zinc-700 text-xs mt-1">
+                        SOL {fmtUsd(wallets.solPrice)}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Holdings Grid */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="border border-zinc-900 rounded p-3">
+                      <p className="text-zinc-600 text-xs mb-1">SOL</p>
+                      <p className="text-white font-bold text-sm">{fmt(w.sol, 4)}</p>
+                      {w.solUsd > 0 && (
+                        <p className="text-zinc-600 text-xs mt-0.5">{fmtUsd(w.solUsd)}</p>
+                      )}
+                    </div>
+                    <div className="border border-zinc-900 rounded p-3">
+                      <p className="text-zinc-600 text-xs mb-1">$LOBSTAR</p>
+                      <p className="text-white font-bold text-sm">{fmt(w.lobstar, 0)}</p>
+                      {w.lobstarUsd > 0 && (
+                        <p className="text-zinc-600 text-xs mt-0.5">{fmtUsd(w.lobstarUsd)}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 text-xs text-zinc-600">
+                    <span>{w.tokenAccounts} tokens held</span>
+                    <span>{w.nfts} NFTs</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </section>
+        ) : null}
+
+        {/* === Wilde Recent Transactions === */}
+        <section className="mb-14">
+          <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em] mb-4">
+            Recent Transactions
+          </h2>
+
+          {loading && !txData ? (
+            <div className="text-zinc-700 text-sm animate-pulse">
+              Loading transactions...
+            </div>
+          ) : txData?.transactions?.length ? (
+            <div className="space-y-0">
+              {txData.transactions.slice(0, 10).map((tx) => (
+                <a
+                  key={tx.signature}
+                  href={`https://solscan.io/tx/${tx.signature}`}
+                  className="block py-3 border-b border-zinc-900/50 hover:bg-zinc-900/30 transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-400 uppercase text-[10px] tracking-wider font-bold">
+                        {tx.type?.replace(/_/g, " ") || "UNKNOWN"}
+                      </span>
+                      {tx.source && (
+                        <span className="text-zinc-700 text-[10px]">
+                          {tx.source.replace(/_/g, " ")}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-zinc-700">
+                        {tx.timestamp ? timeAgo(tx.timestamp) : "—"}
+                      </span>
+                      <span className="text-zinc-800">
+                        {truncSig(tx.signature)}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Balance changes */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
+                    {tx.solChange !== 0 && (
+                      <span className={tx.solChange > 0 ? "text-emerald-600" : "text-red-500/70"}>
+                        {fmtChange(tx.solChange)} SOL
+                      </span>
+                    )}
+                    {tx.tokenChanges?.map((tc, i) => (
+                      <span
+                        key={i}
+                        className={tc.amount > 0 ? "text-emerald-600" : "text-red-500/70"}
+                      >
+                        {fmtChange(tc.amount, tc.decimals)} {mintLabel(tc.mint)}
+                      </span>
+                    ))}
+                    {tx.fee > 0 && (
+                      <span className="text-zinc-800">
+                        fee {tx.fee.toFixed(6)} SOL
+                      </span>
+                    )}
+                  </div>
+                  {/* Description */}
+                  {tx.description && (
+                    <p className="text-zinc-700 text-[11px] truncate mt-0.5">
+                      {tx.description}
+                    </p>
+                  )}
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="text-zinc-700 text-sm">No transactions found.</p>
+          )}
+          {error && (
+            <p className="text-red-500/60 text-xs mt-2">{error}</p>
+          )}
+          {lastRefresh && (
+            <p className="text-zinc-800 text-[10px] mt-2">
+              Last refresh: {lastRefresh.toLocaleTimeString()}
+            </p>
+          )}
+        </section>
+
+        {/* $LOBSTAR Market */}
+        {wallets?.market && wallets.market.price > 0 && (
+          <section className="mb-10">
+            <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em] mb-4">
+              $LOBSTAR Market
+            </h2>
+            <div className="border border-zinc-900 rounded p-4">
+              <div className="flex justify-between items-baseline mb-4">
+                <span className="text-white text-lg font-bold">
+                  {fmtUsd(wallets.market.price)}
+                </span>
+                <PctChange value={wallets.market.priceChange.h24} />
+              </div>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">5m</span>
+                  <PctChange value={wallets.market.priceChange.m5} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">1h</span>
+                  <PctChange value={wallets.market.priceChange.h1} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">6h</span>
+                  <PctChange value={wallets.market.priceChange.h6} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">24h</span>
+                  <PctChange value={wallets.market.priceChange.h24} />
+                </div>
+              </div>
+              <div className="mt-4 space-y-2 text-sm border-t border-zinc-900 pt-4">
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">Market Cap</span>
+                  <span className="text-zinc-400">{fmtCompact(wallets.market.marketCap)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">24h Volume</span>
+                  <span className="text-zinc-400">{fmtCompact(wallets.market.volume.h24)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">1h Volume</span>
+                  <span className="text-zinc-400">{fmtCompact(wallets.market.volume.h1)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">Liquidity</span>
+                  <span className="text-zinc-400">{fmtCompact(wallets.market.liquidity)}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Bio */}
         <section className="mb-12">
           <p className="text-zinc-400 leading-relaxed">
@@ -269,28 +489,6 @@ export default function Home() {
             </a>
             {" "}&mdash; I respond.
           </p>
-        </section>
-
-        {/* Status */}
-        <section className="mb-10">
-          <div className="flex items-center gap-3">
-            <span
-              className={`inline-block w-2 h-2 rounded-full ${error ? "bg-red-500" : "bg-zinc-400 animate-pulse"}`}
-            />
-            <span
-              className={`text-sm uppercase tracking-wider ${error ? "text-red-400" : "text-zinc-400"}`}
-            >
-              {loading ? "Connecting" : error ? "Error" : "Online"}
-            </span>
-          </div>
-          {lastRefresh && (
-            <p className="text-zinc-700 text-xs mt-1 ml-5">
-              Last refresh: {lastRefresh.toLocaleTimeString()}
-            </p>
-          )}
-          {error && (
-            <p className="text-red-500/60 text-xs mt-1 ml-5">{error}</p>
-          )}
         </section>
 
         {/* System */}
@@ -393,235 +591,77 @@ export default function Home() {
           </section>
         )}
 
-        {/* $LOBSTAR Market */}
-        {wallets?.market && wallets.market.price > 0 && (
+        {/* Intern Wallet */}
+        {wallets && (
           <section className="mb-10">
             <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em] mb-4">
-              $LOBSTAR Market
+              Intern Wallet
             </h2>
-            <div className="border border-zinc-900 rounded p-4">
-              <div className="flex justify-between items-baseline mb-4">
-                <span className="text-white text-lg font-bold">
-                  {fmtUsd(wallets.market.price)}
-                </span>
-                <PctChange value={wallets.market.priceChange.h24} />
-              </div>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">5m</span>
-                  <PctChange value={wallets.market.priceChange.m5} />
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">1h</span>
-                  <PctChange value={wallets.market.priceChange.h1} />
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">6h</span>
-                  <PctChange value={wallets.market.priceChange.h6} />
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">24h</span>
-                  <PctChange value={wallets.market.priceChange.h24} />
-                </div>
-              </div>
-              <div className="mt-4 space-y-2 text-sm border-t border-zinc-900 pt-4">
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">Market Cap</span>
-                  <span className="text-zinc-400">{fmtCompact(wallets.market.marketCap)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">24h Volume</span>
-                  <span className="text-zinc-400">{fmtCompact(wallets.market.volume.h24)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">1h Volume</span>
-                  <span className="text-zinc-400">{fmtCompact(wallets.market.volume.h1)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">Liquidity</span>
-                  <span className="text-zinc-400">{fmtCompact(wallets.market.liquidity)}</span>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Wallet Portfolio */}
-        <section className="mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em]">
-              Portfolio
-            </h2>
-            {wallets && wallets.solPrice > 0 && (
-              <span className="text-zinc-700 text-xs">
-                SOL {fmtUsd(wallets.solPrice)}
-              </span>
-            )}
-          </div>
-          {loading && !wallets ? (
-            <div className="text-zinc-700 text-sm animate-pulse">
-              Loading wallets...
-            </div>
-          ) : wallets ? (
-            <div className="space-y-4">
-              {(["wilde", "intern"] as const).map((key) => {
-                const w = wallets[key];
-                return (
-                  <div key={key} className="border border-zinc-900 rounded p-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <a
-                        href={`https://solscan.io/account/${w.address}`}
-                        className="text-zinc-300 text-sm font-bold hover:text-white transition-colors"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {w.label}
-                      </a>
-                      <a
-                        href={`https://solscan.io/account/${w.address}`}
-                        className="text-zinc-700 hover:text-zinc-400 text-xs transition-colors"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {truncSig(w.address)}
-                      </a>
+            {(() => {
+              const w = wallets.intern;
+              return (
+                <div className="border border-zinc-900 rounded p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <a
+                      href={`https://solscan.io/account/${w.address}`}
+                      className="text-zinc-300 text-sm font-bold hover:text-white transition-colors"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {w.label}
+                    </a>
+                    <a
+                      href={`https://solscan.io/account/${w.address}`}
+                      className="text-zinc-700 hover:text-zinc-400 text-xs transition-colors"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {truncSig(w.address)}
+                    </a>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600">SOL</span>
+                      <div className="text-right">
+                        <span className="text-white font-bold">
+                          {fmt(w.sol, 4)}
+                        </span>
+                        {w.solUsd > 0 && (
+                          <span className="text-zinc-600 ml-2 text-xs">
+                            {fmtUsd(w.solUsd)}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="space-y-2 text-sm">
+                    {w.lobstar > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-zinc-600">SOL</span>
+                        <span className="text-zinc-600">$LOBSTAR</span>
                         <div className="text-right">
                           <span className="text-white font-bold">
-                            {fmt(w.sol, 4)}
+                            {fmt(w.lobstar, 0)}
                           </span>
-                          {w.solUsd > 0 && (
+                          {w.lobstarUsd > 0 && (
                             <span className="text-zinc-600 ml-2 text-xs">
-                              {fmtUsd(w.solUsd)}
+                              {fmtUsd(w.lobstarUsd)}
                             </span>
                           )}
                         </div>
                       </div>
-                      {w.lobstar > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-zinc-600">$LOBSTAR</span>
-                          <div className="text-right">
-                            <span className="text-white font-bold">
-                              {fmt(w.lobstar, 0)}
-                            </span>
-                            {w.lobstarUsd > 0 && (
-                              <span className="text-zinc-600 ml-2 text-xs">
-                                {fmtUsd(w.lobstarUsd)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-zinc-600">Tokens Held</span>
-                        <span className="text-zinc-400">{w.tokenAccounts}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-600">NFTs</span>
-                        <span className="text-zinc-400">{w.nfts}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-        </section>
-
-        {/* Transaction History */}
-        <section className="mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs text-zinc-600 uppercase tracking-[0.15em]">
-              Recent Transactions
-            </h2>
-            <div className="flex gap-1">
-              {(["wilde", "intern"] as const).map((key) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveWallet(key)}
-                  className={`text-xs px-3 py-1 rounded transition-colors cursor-pointer ${
-                    activeWallet === key
-                      ? "bg-zinc-800 text-white"
-                      : "text-zinc-600 hover:text-zinc-400"
-                  }`}
-                >
-                  {key === "intern" ? "Intern" : "Wilde"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {loading && !txData ? (
-            <div className="text-zinc-700 text-sm animate-pulse">
-              Loading transactions...
-            </div>
-          ) : txData?.transactions?.length ? (
-            <div className="space-y-0">
-              {txData.transactions.map((tx) => (
-                <a
-                  key={tx.signature}
-                  href={`https://solscan.io/tx/${tx.signature}`}
-                  className="block py-3 border-b border-zinc-900/50 hover:bg-zinc-900/30 transition-colors"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-zinc-400 uppercase text-[10px] tracking-wider font-bold">
-                        {tx.type?.replace(/_/g, " ") || "UNKNOWN"}
-                      </span>
-                      {tx.source && (
-                        <span className="text-zinc-700 text-[10px]">
-                          {tx.source.replace(/_/g, " ")}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-zinc-700">
-                        {tx.timestamp ? timeAgo(tx.timestamp) : "—"}
-                      </span>
-                      <span className="text-zinc-800">
-                        {truncSig(tx.signature)}
-                      </span>
-                    </div>
-                  </div>
-                  {/* Balance changes */}
-                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
-                    {tx.solChange !== 0 && (
-                      <span className={tx.solChange > 0 ? "text-emerald-600" : "text-red-500/70"}>
-                        {fmtChange(tx.solChange)} SOL
-                      </span>
                     )}
-                    {tx.tokenChanges?.map((tc, i) => (
-                      <span
-                        key={i}
-                        className={tc.amount > 0 ? "text-emerald-600" : "text-red-500/70"}
-                      >
-                        {fmtChange(tc.amount, tc.decimals)} {mintLabel(tc.mint)}
-                      </span>
-                    ))}
-                    {tx.fee > 0 && (
-                      <span className="text-zinc-800">
-                        fee {tx.fee.toFixed(6)} SOL
-                      </span>
-                    )}
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600">Tokens Held</span>
+                      <span className="text-zinc-400">{w.tokenAccounts}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-600">NFTs</span>
+                      <span className="text-zinc-400">{w.nfts}</span>
+                    </div>
                   </div>
-                  {/* Description */}
-                  {tx.description && (
-                    <p className="text-zinc-700 text-[11px] truncate mt-0.5">
-                      {tx.description}
-                    </p>
-                  )}
-                </a>
-              ))}
-            </div>
-          ) : (
-            <p className="text-zinc-700 text-sm">No transactions found.</p>
-          )}
-        </section>
+                </div>
+              );
+            })()}
+          </section>
+        )}
 
         {/* Wallet Tracker */}
         <section className="mb-10">
