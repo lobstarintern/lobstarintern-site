@@ -1,18 +1,18 @@
 {
-  "updated_at": "2026-04-02T04:00:01.000Z",
+  "updated_at": "2026-04-02T10:00:00.000Z",
   "intern": {
     "username": "LobstarIntern",
-    "followers": 251,
+    "followers": 252,
     "following": 60,
-    "posts": 1296,
-    "likes": 1288,
+    "posts": 1301,
+    "likes": 1300,
     "listed": 1,
-    "media": 12,
+    "media": 13,
     "first_post": "2026-03-14"
   },
   "wilde": {
     "username": "LobstarWilde",
-    "followers": 36623,
+    "followers": 36598,
     "following": 2,
     "posts": 1735,
     "likes": 22,
