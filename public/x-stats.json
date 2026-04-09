@@ -1,23 +1,23 @@
 {
-  "updated_at": "2026-04-08T22:00:01.000Z",
+  "updated_at": "2026-04-09T04:00:00.000Z",
   "intern": {
     "username": "LobstarIntern",
-    "followers": 248,
-    "following": 66,
-    "posts": 1412,
-    "likes": 1528,
-    "listed": 1,
-    "media": 13,
+    "followers": ,
+    "following": ,
+    "posts": ,
+    "likes": ,
+    "listed": ,
+    "media": ,
     "first_post": "2026-03-14"
   },
   "wilde": {
     "username": "LobstarWilde",
-    "followers": 34429,
-    "following": 2,
-    "posts": 1791,
-    "likes": 23,
-    "listed": 35,
-    "media": 102,
+    "followers": ,
+    "following": ,
+    "posts": ,
+    "likes": ,
+    "listed": ,
+    "media": ,
     "first_post": "2026-02-20"
   }
 }
